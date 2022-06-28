@@ -1,5 +1,5 @@
 ## Requirements
-* Access to Han's Bootstap node
+* Access to Han's Bootstrap node
 
 ## Steps
 * To run the scripts, first ssh to the Bootstrap node using `ssh 10.255.15.3`. 
