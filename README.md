@@ -1,6 +1,6 @@
 # Energy Efficient Streaming
 
-## Prilimary Knowledge
+## Prelimary Knowledge
 * `Bootstrap Node`: Linux Machine, Local IP Address: `10.255.15.3`, scripts shall be executed from here
 * `Victim Node`: Linux Machine, with specific device driver modified, IP Address: `192.168.1.9`, energy data is collected from here
 * `Benchmarks`: Example queries that we used for running experiment. The detailed description for what each query does is in [CASP Benchmark Application for AWS Kinesis](https://github.com/CASP-Systems-BU/cloud-provider-benchmarks)
