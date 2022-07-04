@@ -40,7 +40,7 @@
   * **DO NOT MODIFY** `clean-sys-log-one.py` and `run_flink_one.sh`, as they were used only for example run
   
 ## Customized Experiment
-* Setup the different hardware paraemters wanted to test on by modifying `clean-sys-log.py` and `run_flink.sh`
+* Setup the different hardware parameters wanted to test on by modifying `clean-sys-log.py` and `run_flink.sh`
   * detailed range of values are listed inside each files 
   * The parameters in these two files must match up, otherwise it will fail
 * Setup the Query input rate and lasting time by modifying `run-flink-workload.sh`
