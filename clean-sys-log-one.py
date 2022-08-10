@@ -12,7 +12,7 @@ if len(sys.argv) != 2:
 loc = sys.argv[1]
 
 # This specifies for where to write to, the location of the csv file
-file_path = '/home/like/eestreaming/datasets/tmp2.csv'
+file_path = '/mnt/eestreaming/datasets/current.csv'
 sys.stdout = open(file_path, "a")
 
 '''
@@ -73,7 +73,13 @@ def parseFlink(i, itr, d, rapl):
     
     f1 = f'{loc}/flink-latency.'+str(i)+'_'+itr+'_'+d+'_'+rapl
     f1out = open(f1, 'r')
-    mlatency = float(f1out.read())
+    context = f1out.read()[1:-1]
+    if len(context) == 0:
+        mlantecy  = -1
+        return
+    context = context.split(", ")
+    vals = [int(c) for c in context]
+    mlatency = np.around(sum(vals)/len(vals),2)
     f1out.close()
     
 
@@ -182,6 +188,6 @@ for d in dvfs:
                             tnum_interrupts += df.shape[0]
 
                             #print(f"linux_core_tuned {i} {core} {itr} {d} {rapl} {read_5th} {read_10th} {read_50th} {read_90th} {read_95th} {read_99th} {mqps} {cqps} {tdiff} {round(cjoules, 2)} {df['rx_desc'].sum()} {df['rx_bytes'].sum()} {df['tx_desc'].sum()} {df['tx_bytes'].sum()} {int(df_non0j['instructions_diff'].sum())} {int(df_non0j['ref_cycles_diff'].sum())} {df.shape[0]}")
-                        print(f"flink {i} {itr} {d} {rapl} {mlatency} {round(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts}")
+                        print(f"flink {i} {itr} {d} {rapl} {mlatency} {np.around(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts}")
 
 sys.stdout.close()

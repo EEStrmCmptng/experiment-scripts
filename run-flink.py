@@ -68,7 +68,7 @@ def setRAPL(v):
         p1 = Popen(["ssh", CSERVER2, "/app/uarch-configure/rapl-read/rapl-power-mod", v], stdout=PIPE, stderr=PIPE)
         p1.communicate()
         time.sleep(0.5)
-    RAPL = int(v)
+        RAPL = int(v)
 
 def setDVFS(v):
     global DVFS
@@ -80,7 +80,7 @@ def setDVFS(v):
     DVFS = v
 
 def cleanLogs():
-    runRemoteCommands("rm -rf /home/like/eestreaming/dependencies/flink/log/*", CSERVER2)
+    runRemoteCommands("rm -rf /mnt/eestreaming/dependencies/flink/log/*", CSERVER2)
     for i in range(0, 16):                    
         runRemoteCommandGet("cat /proc/ixgbe_stats/core/"+str(i)+" &> /dev/null", "192.168.1.9")
         if VERBOSE:
@@ -102,7 +102,6 @@ def getLogs():
 def parseLatency(filename):
     f = open(filename, 'r')
     lines = f.readlines()
-    average = 0
     draft = []
     result = []
     for i in range(len(lines)):
@@ -110,23 +109,23 @@ def parseLatency(filename):
             draft.append(lines[i][lines[i].index("[] - %latency%")+len("[] - %latency%"):])
     for i in range(len(draft)):
         result.append(int(draft[i][:draft[i].index("%")]))
-    if len(result) == 0:
-        average = -1.0
-    else:
-        average = np.round(sum(result)/len(result))
-    return average
+    f.close()
+    return result
 
 def getFlinkLog():
-    runLocalCommand("scp -r 192.168.1.9:/home/like/eestreaming/dependencies/flink/log/flink-root-taskexecutor-0-neu-5-9.log ../dependencies/flink/log/")
+    runLocalCommand("scp -r 192.168.1.9:/mnt/eestreaming/dependencies/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/flink-root-taskexecutor-0-neu-5-9.log ../dependencies/flink-simplified/build-target/log/")
     time.sleep(1)
 
     # The sink may change
 
-    files = glob("../dependencies/flink/log/flink-root-taskexecutor-1*.log")
+    files = glob("../dependencies/flink-simplified/build-target/log/flink-root-taskexecutor*.log")
     if len(files) == 0:
     #file did not find
         sys.exit()
-    latency_result = parseLatency(files[0])
+    latency_result = []
+    for log_file in files:
+        latency_result += parseLatency(log_file)
+
     file_latency = open("flink-latency."+str(NREPEAT)+"_"+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL), "w+")
     file_latency.write(str(latency_result))
     file_latency.close()
@@ -137,7 +136,8 @@ def runFlink():
     cleanLogs()
 
     ## run workload
-    subprocess.call(['sh', './run-flink-workload.sh'])
+    workload_script = './run-flink-workload.sh'
+    subprocess.call(['sh', workload_script, RATE])
     
     
     printLogs()
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     parser.add_argument("--dvfs", help="DVFS value [0xc00 - 0x1d00]")
     parser.add_argument("--nrepeat", help="repeat value")
     parser.add_argument("--verbose", help="Print mcd raw stats")
-    
+    parser.add_argument("--rate")
     args = parser.parse_args()
 
     if args.itr:
@@ -169,10 +169,12 @@ if __name__ == '__main__':
     if args.nrepeat:
         NREPEAT = args.nrepeat
         
-        
+    if args.rate:
+        RATE = args.rate
+
     if args.verbose:
         VERBOSE = 1
-
+    
     runFlink()
 
 

@@ -12,7 +12,7 @@ if len(sys.argv) != 2:
 loc = sys.argv[1]
 
 # This specifies for where to write to, the location of the csv file
-file_path = '/home/like/eestreaming/datasets/tmp.csv'
+file_path = '/mnt/eestreaming/datasets/current.csv'
 sys.stdout = open(file_path, "a")
 
 '''
@@ -35,11 +35,11 @@ dvfs = ["0xd00",
 itrs = ["1", "2", "4", "8", "10", "20", "30", "40", "50", "100", "200", "300", "350", "400"]
 '''
 
-dvfs=["0x1d00","0x1b00"]
-itrs=["1", "4"]
+dvfs=["0x0c00","0x1d00"]
+itrs=["50", "100"]
 
 rapls = ["135"]
-iters = 1
+iters = 3
 LINUX_COLS = ['i', 'rx_desc', 'rx_bytes', 'tx_desc', 'tx_bytes', 'instructions', 'cycles', 'ref_cycles', 'llc_miss', 'c0', 'c1', 'c1e', 'c3', 'c6', 'c7', 'joules', 'timestamp']
 
 TIME_CONVERSION_khz = 1./(2899999*1000)
@@ -70,15 +70,26 @@ def parseFlink(i, itr, d, rapl):
     global slatency
     global mlatency
     
-    f1 = f'{loc}/flink-latency-master.'+str(i)+'_'+itr+'_'+d+'_'+rapl
+    def reject_outliers(data, m=2):
+        return data[abs(data - np.mean(data)) < m * np.std(data)]
+
+    f1 = f'{loc}/flink-latency.'+str(i)+'_'+itr+'_'+d+'_'+rapl
     f1out = open(f1, 'r')
-    mlatency = float(f1out.read())
+    context = f1out.read()[1:-1]
+    if len(context) == 0:
+        mlantecy  = -1
+        return
+    context = context.split(", ")
+    vals = np.array([int(c) for c in context])
+    vals = reject_outliers(vals) 
+    mlatency = np.around(np.mean(vals),2)
     f1out.close()
     
-    f2 = f'{loc}/flink-latency-slave.'+str(i)+'_'+itr+'_'+d+'_'+rapl
-    f2out = open(f2, 'r')
-    slatency = float(f2out.read())
-    f2out.close()
+
+    #f2 = f'{loc}/flink-latency-slave.'+str(i)+'_'+itr+'_'+d+'_'+rapl
+    #f2out = open(f2, 'r')
+    #slatency = float(f2out.read())
+    #f2out.close()
 
 
 def parseRdtsc(i, itr, d, rapl):
@@ -180,6 +191,6 @@ for d in dvfs:
                             tnum_interrupts += df.shape[0]
 
                             #print(f"linux_core_tuned {i} {core} {itr} {d} {rapl} {read_5th} {read_10th} {read_50th} {read_90th} {read_95th} {read_99th} {mqps} {cqps} {tdiff} {round(cjoules, 2)} {df['rx_desc'].sum()} {df['rx_bytes'].sum()} {df['tx_desc'].sum()} {df['tx_bytes'].sum()} {int(df_non0j['instructions_diff'].sum())} {int(df_non0j['ref_cycles_diff'].sum())} {df.shape[0]}")
-                        print(f"flink {i} {itr} {d} {rapl} {mlatency} {slatency} {round(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts}")
+                        print(f"flink {i} {itr} {d} {rapl} {mlatency} {np.around(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts}")
 
 sys.stdout.close()
