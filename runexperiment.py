@@ -126,19 +126,20 @@ def setDVFS(v):
 
 
 def init():
-    runcmd('mkdir Flinklogs_'+KWD)
-    runcmd('mkdir ITRlogs_'+KWD)
-    runcmd('mkdir ITRlogs_'+KWD+'/'+bootstrap.replace('.','_'))
-    runcmd('mkdir ITRlogs_'+KWD+'/'+victim.replace('.','_'))
-    runcmd('mkdir Flinklogs_'+KWD+'/'+bootstrap.replace('.','_'))
-    runcmd('mkdir Flinklogs_'+KWD+'/'+victim.replace('.','_'))
+    runcmd('mkdir logs')
+    runcmd('mkdir logs/Flinklogs_'+KWD)
+    runcmd('mkdir logs/ITRlogs_'+KWD)
+    runcmd('mkdir logs/ITRlogs_'+KWD+'/'+bootstrap.replace('.','_'))
+    runcmd('mkdir logs/ITRlogs_'+KWD+'/'+victim.replace('.','_'))
+    runcmd('mkdir logs/Flinklogs_'+KWD+'/'+bootstrap.replace('.','_'))
+    runcmd('mkdir logs/Flinklogs_'+KWD+'/'+victim.replace('.','_'))
 
 # get ITR logs from victim node
 def getITRlogs(cores):
     for i in range(cores):
         gcmd="cat /proc/ixgbe_stats/core/"+str(i)+" &> /app/flink_dmesg."+str(i)
         runcmd('ssh ' + victim + ' "' + gcmd + '"')
-        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+" ./ITRlogs_"+KWD+"/"+victim.replace('.','_')+"linux.flink.dmesg."+"_"+str(i)
+        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+" ./logs/ITRlogs_"+KWD+"/"+victim.replace('.','_')+"linux.flink.dmesg."+"_"+str(i)
         runcmd(gcmd)
 
 # get Flink logs 
@@ -178,9 +179,9 @@ def getFlinkLog(edir, _clock, interval):
         time.sleep(interval)
         clock-=interval
 
-    gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./Flinklogs_"+KWD+"/"+victim.replace('.','_')+"/"
+    gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./logs/Flinklogs_"+KWD+"/"+victim.replace('.','_')+"/"
     runcmd(gcmd)
-    gcmd="scp -r "+bootstrap+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
+    gcmd="scp -r "+bootstrap+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./logs/Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
     runcmd(gcmd)
 
 
@@ -277,12 +278,12 @@ if __name__ == '__main__':
     # time.sleep(60)
 
     # get ITR log + flink log
-    getFlinkLog("./Flinklogs_"+KWD+"/", 60, 5)
+    getFlinkLog("./logs/Flinklogs_"+KWD+"/", 60, 5)    # run 60 sec, and record metrics every 5 sec
     getITRlogs(NCORES)
 
     stopflink()
 
-    flinklogdir="./Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
+    flinklogdir="./logs/Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
     fnames=os.listdir(flinklogdir)
     latency_list={}
     latency_avg={}
