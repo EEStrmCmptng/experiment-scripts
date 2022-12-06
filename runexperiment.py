@@ -73,6 +73,14 @@ def startflink():
     print("started flink")
 
 
+def get_task_metrics_details(jobid, taskid, fieldid):
+    # http://192.168.1.105:8081/jobs/e81ee095a99bfc431e260d044ff7e03d/vertices/ea632d67b7d595e5b851708ae9ad79d6/metrics?get=4.busyTimeMsPerSecond
+    url = "http://"+jmip+":"+str(jmpt)+"/jobs/{}/vertices/{}/metrics?get={}".format(jobid, taskid, fieldid)
+    response = requests.get(url)
+    response.raise_for_status()
+    ans=response.json()#[0]['value']
+    return(str(ans))
+
 
 NREPEAT=0
 NCORES=16
@@ -134,11 +142,47 @@ def getITRlogs(cores):
         runcmd(gcmd)
 
 # get Flink logs 
-def getFlinkLog():
+def getFlinkLog(edir, _clock, interval):
+    tmid=[]
+    for tm in rest_client.taskmanagers.all():
+        tmid.append(tm['id'])
+
+    clock=_clock
+    print("starting...")
+    while(clock>0):
+        print("clock", clock, "-------------------------------------------------------------")
+        vertex_ids=rest_client.jobs.get_vertex_ids(job_id)
+        for vid in vertex_ids:
+            jvurl="http://"+jmip+":"+str(jmpt)+"/jobs/"+job_id+"/vertices/"+vid
+            res=requests.get(jvurl).json()
+            #print(res)
+            vts=str(res['now'])
+            vname=res['name']
+            vpall=str(res['parallelism'])
+            for vtask in res['subtasks']:
+                ttm=vtask['taskmanager-id']
+                tid=str(vtask['subtask'])
+                t_duration=str([{'id':'duration','value':vtask['duration']}])
+                t_rbytes=str([{'id':'read-bytes','value':vtask['metrics']['read-bytes']}])
+                t_wbytes=str([{'id':'write-bytes','value':vtask['metrics']['write-bytes']}])
+                t_rrec=str([{'id':'read-records','value':vtask['metrics']['read-records']}])
+                t_wrec=str([{'id':'write-records','value':vtask['metrics']['write-records']}])
+                t_busytime=get_task_metrics_details(job_id, vid, tid+'.busyTimeMsPerSecond')
+                t_backpressure=get_task_metrics_details(job_id, vid, tid+'.backPressuredTimeMsPerSecond')
+                t_idletime=get_task_metrics_details(job_id, vid, tid+'.idleTimeMsPerSecond')
+                t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
+                t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
+                #print(vts, vname, vpall, ttm, tid, t_busytime, t_backpressure, t_idletime, t_opsin, t_opsout)
+                ff=open(edir+'/'+vname+'_'+tid, 'a')
+                ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
+        time.sleep(interval)
+        clock-=interval
+
     gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./Flinklogs_"+KWD+"/"+victim.replace('.','_')+"/"
     runcmd(gcmd)
     gcmd="scp -r "+bootstrap+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
     runcmd(gcmd)
+
 
 def parseFlinkLatency(filename):
     f = open(filename, 'r')
@@ -230,11 +274,11 @@ if __name__ == '__main__':
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print("deployed job id=", job_id)
-    time.sleep(60)
+    # time.sleep(60)
 
     # get ITR log + flink log
+    getFlinkLog("./Flinklogs_"+KWD+"/", 60, 5)
     getITRlogs(NCORES)
-    getFlinkLog()
 
     stopflink()
 
