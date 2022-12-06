@@ -1,5 +1,6 @@
 from flink_rest_client import FlinkRestClient
 import sys, os, time, json, requests, argparse
+import numpy as np
 
 
 ROOTDIR=os.path.dirname(os.getcwd())
@@ -118,7 +119,7 @@ def setDVFS(v):
 
 def init():
     runcmd('mkdir Flinklogs_'+KWD)
-    runcmd('mkfir ITRlogs_'+KWD)
+    runcmd('mkdir ITRlogs_'+KWD)
     runcmd('mkdir ITRlogs_'+KWD+'/'+bootstrap.replace('.','_'))
     runcmd('mkdir ITRlogs_'+KWD+'/'+victim.replace('.','_'))
     runcmd('mkdir Flinklogs_'+KWD+'/'+bootstrap.replace('.','_'))
@@ -240,7 +241,10 @@ if __name__ == '__main__':
     flinklogdir="./Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
     fnames=os.listdir(flinklogdir)
     latency_list={}
+    latency_avg={}
     for ff in fnames:
         latency_list[ff]=parseFlinkLatency(flinklogdir+ff)
+        latency_avg[ff]=np.average(latency_list[ff])
 
     print(latency_list)
+    print(latency_avg)
