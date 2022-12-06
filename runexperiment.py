@@ -34,10 +34,20 @@ def startflink():
 
     for ip in open('./flink-cfg/workers','r').readlines():
         iplist.append(ip.replace("\n",""))
-    for ip in open('./flink-cfg/masters','r').readlines():
-        iplist.append(ip.replace("\n","").replace(':8081',''))
+    # for ip in open('./flink-cfg/masters','r').readlines():
+    #     iplist.append(ip.replace("\n","").replace(':8081',''))
 
-    print(os.popen("cp -r ./flink-cfg/* "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/conf/").read())
+    print(iplist)
+    for ip in iplist:
+        print(os.popen("cp ./flink-cfg/flink-conf.yaml ./flink-cfg/flink-conf.yaml"+ip.replace('.','')).read())
+        ff=open('./flink-cfg/flink-conf.yaml'+ip.replace('.',''), 'r').read().replace('WORKERIP',ip)
+        wf=open('./flink-cfg/flink-conf.yaml'+ip.replace('.',''), 'w').write(ff)
+
+    print(os.popen("cp ./flink-cfg/* "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/conf/").read())
+    print(os.popen("cp ./flink-cfg/* "+FLINKROOT+"/scripts/").read())
+
+    for ip in iplist:
+        print(os.popen('ssh '+ip+' "rm -rf '+FLINKROOT+'/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*"').read())
 
     for ip in iplist:
         if not (ip in localip):
@@ -54,6 +64,7 @@ def startflink():
 
     for ip in iplist:
         print(ip)
+        print(os.popen('ssh '+ip+' "cd '+FLINKROOT+'/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/conf ; cp flink-conf.yaml'+ip.replace('.','')+' flink-conf.yaml"').read())
         print(os.popen('ssh '+ip+' "cp '+FLINKROOT+'/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/conf/flink-conf.yaml '+FLINKROOT+'/scripts/flink-conf.yaml"').read())    # customscheduler need to read it
 
     print('-----------------------------------------------------')
@@ -67,7 +78,7 @@ NCORES=16
 ITR=0
 RAPL=0
 DVFS=0
-FLINKRATE='100_10000'
+FLINKRATE='100_100000'
 BUFFTIMEOUT='20'
 KWD='**'
 
@@ -121,9 +132,11 @@ def getITRlogs(cores):
         gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+" ./ITRlogs_"+KWD+"/"+victim.replace('.','_')+"linux.flink.dmesg."+"_"+str(i)
         runcmd(gcmd)
 
-# get Flink logs from victim node
+# get Flink logs 
 def getFlinkLog():
-    gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/flink-root-taskexecutor* ./Flinklogs_"+KWD+"/"+victim.replace('.','_')+"/"
+    gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./Flinklogs_"+KWD+"/"+victim.replace('.','_')+"/"
+    runcmd(gcmd)
+    gcmd="scp -r "+bootstrap+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
     runcmd(gcmd)
 
 def parseFlinkLatency(filename):
@@ -150,7 +163,7 @@ def upload_jar(fpath):
 
 
 if __name__ == '__main__':
-    # python3 runexperiment.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_10000 --cores 16
+    # python3 runexperiment.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_100000 --cores 16
     parser = argparse.ArgumentParser()
     parser.add_argument("--cores", help="num of cpu cores")
     parser.add_argument("--rapl", help="Rapl power limit [35, 135]")
@@ -160,12 +173,16 @@ if __name__ == '__main__':
     parser.add_argument("--verbose", help="Print mcd raw stats")
     parser.add_argument("--flinkrate", help="input rate of Flink query")
     parser.add_argument("--bufftimeout", help="buffer-Timeout in Flink")
-    parser.add_argument("--runcmd", help="runexp/stopflink")
+    parser.add_argument("--runcmd", help="runexp/stopflink/plot")
     args = parser.parse_args()
 
     if args.runcmd:
         if(args.runcmd=='stopflink'):
             stopflink()
+            exit(0)
+        if(args.runcmd=='startflink'):
+            stopflink()
+            startflink()
             exit(0)
 
     if args.itr:
@@ -182,11 +199,11 @@ if __name__ == '__main__':
 
     if args.nrepeat:
         print("NREPEAT = ", args.nrepeat)
-        NREPEAT = args.nrepeat
+        NREPEAT = int(args.nrepeat)
 
     if args.cores:
         print("NCORES = ", args.cores)
-        NCORES = args.cores
+        NCORES = int(args.cores)
 
     if args.flinkrate:
         print("flinkrate = ", args.flinkrate)
@@ -203,7 +220,7 @@ if __name__ == '__main__':
     stopflink()
     startflink()
     time.sleep(20)
-    #../dependencies/flink-simplified/build-target/bin/flink run ../dependencies/flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dependencies.jar --ratelist $1 --buffer-Timeout 20
+    #./flink-simplified/build-target/bin/flink run ./flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dependencies.jar --ratelist 100_1000 --buffer-Timeout 20
     rest_client = FlinkRestClient.get(host=jmip, port=jmpt)
     rest_client.overview()
     ur = upload_jar(jarpath)
@@ -220,5 +237,10 @@ if __name__ == '__main__':
 
     stopflink()
 
+    flinklogdir="./Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
+    fnames=os.listdir(flinklogdir)
+    latency_list={}
+    for ff in fnames:
+        latency_list[ff]=parseFlinkLatency(flinklogdir+ff)
 
-
+    print(latency_list)
