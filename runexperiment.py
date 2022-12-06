@@ -5,14 +5,12 @@ import numpy as np
 
 ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
-FLINKROOT='/home/tidb/Desktop/data/energy/experiment-scripts/flink-simplified/'
+FLINKROOT='/mnt/eestreaming-refactor/experiment-scripts/flink-simplified/'
 print(FLINKROOT)
 
 # the script will run on bootstrap
-# bootstrap='192.168.1.153'   # jobmanager
-# victim='192.168.1.11'       # scp logs from victim to bootstrap
-bootstrap='192.168.1.180'    # For testing
-victim='192.168.1.181'           # For testing
+bootstrap='192.168.1.153'   # jobmanager
+victim='192.168.1.11'       # scp logs from victim to bootstrap
 jarpath='./flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dependencies.jar'
 
 
