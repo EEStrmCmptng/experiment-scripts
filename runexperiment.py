@@ -150,30 +150,31 @@ def getFlinkLog(edir, _clock, interval):
     print("starting...")
     while(clock>0):
         print("clock", clock, "-------------------------------------------------------------")
-        vertex_ids=rest_client.jobs.get_vertex_ids(job_id)
-        for vid in vertex_ids:
-            jvurl="http://"+jmip+":"+str(jmpt)+"/jobs/"+job_id+"/vertices/"+vid
-            res=requests.get(jvurl).json()
-            #print(res)
-            vts=str(res['now'])
-            vname=res['name']
-            vpall=str(res['parallelism'])
-            for vtask in res['subtasks']:
-                ttm=vtask['taskmanager-id']
-                tid=str(vtask['subtask'])
-                t_duration=str([{'id':'duration','value':vtask['duration']}])
-                t_rbytes=str([{'id':'read-bytes','value':vtask['metrics']['read-bytes']}])
-                t_wbytes=str([{'id':'write-bytes','value':vtask['metrics']['write-bytes']}])
-                t_rrec=str([{'id':'read-records','value':vtask['metrics']['read-records']}])
-                t_wrec=str([{'id':'write-records','value':vtask['metrics']['write-records']}])
-                t_busytime=get_task_metrics_details(job_id, vid, tid+'.busyTimeMsPerSecond')
-                t_backpressure=get_task_metrics_details(job_id, vid, tid+'.backPressuredTimeMsPerSecond')
-                t_idletime=get_task_metrics_details(job_id, vid, tid+'.idleTimeMsPerSecond')
-                t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
-                t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
-                #print(vts, vname, vpall, ttm, tid, t_busytime, t_backpressure, t_idletime, t_opsin, t_opsout)
-                ff=open(edir+'/'+vname+'_'+tid, 'a')
-                ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
+        if(interval!=-1):
+            vertex_ids=rest_client.jobs.get_vertex_ids(job_id)
+            for vid in vertex_ids:
+                jvurl="http://"+jmip+":"+str(jmpt)+"/jobs/"+job_id+"/vertices/"+vid
+                res=requests.get(jvurl).json()
+                #print(res)
+                vts=str(res['now'])
+                vname=res['name']
+                vpall=str(res['parallelism'])
+                for vtask in res['subtasks']:
+                    ttm=vtask['taskmanager-id']
+                    tid=str(vtask['subtask'])
+                    t_duration=str([{'id':'duration','value':vtask['duration']}])
+                    t_rbytes=str([{'id':'read-bytes','value':vtask['metrics']['read-bytes']}])
+                    t_wbytes=str([{'id':'write-bytes','value':vtask['metrics']['write-bytes']}])
+                    t_rrec=str([{'id':'read-records','value':vtask['metrics']['read-records']}])
+                    t_wrec=str([{'id':'write-records','value':vtask['metrics']['write-records']}])
+                    t_busytime=get_task_metrics_details(job_id, vid, tid+'.busyTimeMsPerSecond')
+                    t_backpressure=get_task_metrics_details(job_id, vid, tid+'.backPressuredTimeMsPerSecond')
+                    t_idletime=get_task_metrics_details(job_id, vid, tid+'.idleTimeMsPerSecond')
+                    t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
+                    t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
+                    #print(vts, vname, vpall, ttm, tid, t_busytime, t_backpressure, t_idletime, t_opsin, t_opsout)
+                    ff=open(edir+'/'+vname+'_'+tid, 'a')
+                    ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
         time.sleep(interval)
         clock-=interval
 
@@ -257,6 +258,16 @@ if __name__ == '__main__':
         print("BUFFTIMEOUT = ", args.bufftimeout)
         BUFFTIMEOUT = args.bufftimeout
 
+    _flinkrate=FLINKRATE.split('_')
+    _flinkdur=0
+    for i in range(len(_flinkrate)):
+        if(i%2!=0):
+            _flinkdur+=int(_flinkrate[i])
+
+    _flinkdur=int(_flinkdur/1000)
+    print(_flinkdur)
+
+
     KWD=str(NREPEAT)+"_"+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL)
     init()
 
@@ -276,7 +287,7 @@ if __name__ == '__main__':
     # time.sleep(60)
 
     # get ITR log + flink log
-    getFlinkLog("./logs/Flinklogs_"+KWD+"/", 60, 5)    # run 60 sec, and record metrics every 5 sec
+    getFlinkLog("./logs/Flinklogs_"+KWD+"/", _flinkdur, 10)    # run _flinkdur sec, and record metrics every 10 sec
     getITRlogs(NCORES)
 
     stopflink()
