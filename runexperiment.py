@@ -106,23 +106,16 @@ def setDVFS(v):
     DVFS = v
 
 
-def init(KWD):
-    runcmd('mkdir logs')
-    runcmd('mkdir logs/Flinklogs_'+KWD)
-    runcmd('mkdir logs/ITRlogs_'+KWD)
-    runcmd('mkdir logs/Flinklogs_'+KWD+'/'+bootstrap.replace('.','_'))
-    runcmd('mkdir logs/Flinklogs_'+KWD+'/'+victim.replace('.','_'))
-
 # get ITR logs from victim node
-def getITRlogs(KWD, cores):
+def getITRlogs(KWD, cores, itrlogsdir):
     for i in range(cores):
         gcmd="cat /proc/ixgbe_stats/core/"+str(i)+" &> /app/flink_dmesg."+str(i)
         runcmd('ssh ' + victim + ' "' + gcmd + '"')
-        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+" ./logs/ITRlogs_"+KWD+"/"+"linux.flink.dmesg."+"_"+str(i)
+        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+" "+itrlogsdir+"linux.flink.dmesg."+"_"+str(i)
         runcmd(gcmd)
 
 # get Flink logs 
-def getFlinkLog(KWD, rest_client, job_id, edir, _clock, interval):
+def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
     tmid=[]
     for tm in rest_client.taskmanagers.all():
         tmid.append(tm['id'])
@@ -154,14 +147,14 @@ def getFlinkLog(KWD, rest_client, job_id, edir, _clock, interval):
                     t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
                     t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
                     #print(vts, vname, vpall, ttm, tid, t_busytime, t_backpressure, t_idletime, t_opsin, t_opsout)
-                    ff=open(edir+'/'+vname+'_'+tid, 'a')
+                    ff=open(flinklogdir+'/'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
         time.sleep(interval)
         clock-=interval
 
-    gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./logs/Flinklogs_"+KWD+"/"+victim.replace('.','_')+"/"
+    gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* "+flinklogdir+"/"+victim.replace('.','_')+"/"
     runcmd(gcmd)
-    gcmd="scp -r "+bootstrap+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* ./logs/Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
+    gcmd="scp -r "+bootstrap+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* "+flinklogdir+"/"+bootstrap.replace('.','_')+"/"
     runcmd(gcmd)
 
 
@@ -203,7 +196,14 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("Flink job duration: ", _flinkdur)
 
     KWD=str(NREPEAT)+"_"+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL)
-    init(KWD)
+    flinklogdir="./logs/"+KWD+"/Flinklogs/"
+    itrlogsdir="./logs/"+KWD+"/ITRlogs/"
+    runcmd('mkdir logs')
+    runcmd('mkdir logs/'+KWD)
+    runcmd('mkdir '+flinklogdir)
+    runcmd('mkdir '+itrlogsdir)
+    runcmd('mkdir '+flinklogdir+'/'+bootstrap.replace('.','_'))
+    runcmd('mkdir '+flinklogdir+'/'+victim.replace('.','_'))
 
     # run a flink job
     stopflink()
@@ -221,17 +221,16 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     # time.sleep(60)
 
     # get ITR log + flink log
-    getFlinkLog(KWD, rest_client, job_id, "./logs/Flinklogs_"+KWD+"/", _flinkdur, 10)    # run _flinkdur sec, and record metrics every 10 sec
-    getITRlogs(KWD, NCORES)
+    getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur, 10)    # run _flinkdur sec, and record metrics every 10 sec
+    getITRlogs(KWD, NCORES, itrlogsdir)
 
     stopflink()
 
-    flinklogdir="./logs/Flinklogs_"+KWD+"/"+bootstrap.replace('.','_')+"/"
-    fnames=os.listdir(flinklogdir)
+    fnames=os.listdir(flinklogdir+bootstrap.replace('.','_')+"/")
     latency_list={}
     latency_avg={}
     for ff in fnames:
-        latency_list[ff]=parseFlinkLatency(flinklogdir+ff)
+        latency_list[ff]=parseFlinkLatency(flinklogdir+bootstrap.replace('.','_')+"/"+ff)
         latency_avg[ff]=np.average(latency_list[ff])
 
     print(latency_list)
