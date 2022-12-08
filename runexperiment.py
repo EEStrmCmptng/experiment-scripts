@@ -13,11 +13,8 @@ bootstrap='192.168.1.153'   # jobmanager
 victim='192.168.1.11'       # scp logs from victim to bootstrap
 jarpath='./flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dependencies.jar'
 
-
-localip=os.popen("hostname -I").read()
-print(localip)
-
-iplist=[]
+jmip=bootstrap
+jmpt=8081
 
 
 def stopflink():
@@ -29,6 +26,9 @@ def stopflink():
 
 
 def startflink():
+    localip=os.popen("hostname -I").read()
+    print(localip)
+    iplist=[]
     print("starting flink...")
 
     for ip in open('./flink-cfg/workers','r').readlines():
@@ -80,19 +80,6 @@ def get_task_metrics_details(jobid, taskid, fieldid):
     return(str(ans))
 
 
-NREPEAT=0
-NCORES=16
-ITR=0
-RAPL=0
-DVFS=0
-FLINKRATE='100_100000'
-BUFFTIMEOUT='20'
-KWD='**'
-
-jmip=bootstrap
-jmpt=8081
-
-
 def runcmd(cmd):
     print('------------------------------------------------------------')
     print(cmd)
@@ -103,20 +90,17 @@ def runcmd(cmd):
 
 # set ITR configurations on victim node
 def setITR(v):
-    global ITR
     runcmd('ssh ' + victim + ' "/app/ethtool-4.5/ethtool -C eth0 rx-usecs '+v+'"')
     time.sleep(0.5)
     ITR = int(v)
 
 def setRAPL(v):
-    global RAPL
     if ITR != 1:
         runcmd('ssh ' + victim + ' "/app/uarch-configure/rapl-read/rapl-power-mod ' + v + '"')
         time.sleep(0.5)
         RAPL = int(v)
 
 def setDVFS(v):
-    global DVFS
     if ITR != 1:
         runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
         time.sleep(0.5)
@@ -207,56 +191,10 @@ def upload_jar(fpath):
     return(response.json())
 
 
-if __name__ == '__main__':
-    # python3 runexperiment.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_100000 --cores 16
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cores", help="num of cpu cores")
-    parser.add_argument("--rapl", help="Rapl power limit [35, 135]")
-    parser.add_argument("--itr", help="Static interrupt delay [10, 500]")
-    parser.add_argument("--dvfs", help="DVFS value [0xc00 - 0x1d00]")
-    parser.add_argument("--nrepeat", help="repeat value")
-    parser.add_argument("--verbose", help="Print mcd raw stats")
-    parser.add_argument("--flinkrate", help="input rate of Flink query")
-    parser.add_argument("--bufftimeout", help="buffer-Timeout in Flink")
-    parser.add_argument("--runcmd", help="runexp/stopflink/plot")
-    args = parser.parse_args()
-
-    if args.runcmd:
-        if(args.runcmd=='stopflink'):
-            stopflink()
-            exit(0)
-        if(args.runcmd=='startflink'):
-            stopflink()
-            startflink()
-            exit(0)
-
-    if args.itr:
-        print("ITR = ", args.itr)
-        setITR(args.itr)
-
-    if args.dvfs:
-        print("DVFS = ", args.dvfs)
-        setDVFS(args.dvfs)
-
-    if args.rapl:
-        print("RAPL = ", args.rapl)
-        setRAPL(args.rapl)
-
-    if args.nrepeat:
-        print("NREPEAT = ", args.nrepeat)
-        NREPEAT = int(args.nrepeat)
-
-    if args.cores:
-        print("NCORES = ", args.cores)
-        NCORES = int(args.cores)
-
-    if args.flinkrate:
-        print("flinkrate = ", args.flinkrate)
-        FLINKRATE = args.flinkrate
-
-    if args.bufftimeout:
-        print("BUFFTIMEOUT = ", args.bufftimeout)
-        BUFFTIMEOUT = args.bufftimeout
+def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
+    setITR(ITR)
+    setDVFS(DVFS)
+    setRAPL(RAPL)
 
     _flinkrate=FLINKRATE.split('_')
     _flinkdur=0
@@ -266,7 +204,6 @@ if __name__ == '__main__':
 
     _flinkdur=int(_flinkdur/1000)
     print(_flinkdur)
-
 
     KWD=str(NREPEAT)+"_"+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL)
     init()
@@ -302,3 +239,59 @@ if __name__ == '__main__':
 
     print(latency_list)
     print(latency_avg)
+
+
+
+if __name__ == '__main__':
+    # python3 runexperiment.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_100000 --cores 16
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cores", help="num of cpu cores")
+    parser.add_argument("--rapl", help="Rapl power limit [35, 135]")
+    parser.add_argument("--itr", help="Static interrupt delay [10, 500]")
+    parser.add_argument("--dvfs", help="DVFS value [0xc00 - 0x1d00]")
+    parser.add_argument("--nrepeat", help="repeat value")
+    parser.add_argument("--verbose", help="Print mcd raw stats")
+    parser.add_argument("--flinkrate", help="input rate of Flink query")
+    parser.add_argument("--bufftimeout", help="buffer-Timeout in Flink")
+    parser.add_argument("--runcmd", help="runexp/stopflink/plot")
+    args = parser.parse_args()
+
+    if args.runcmd:
+        if(args.runcmd=='stopflink'):
+            stopflink()
+            exit(0)
+        if(args.runcmd=='startflink'):
+            stopflink()
+            startflink()
+            exit(0)
+
+    if args.itr:
+        print("ITR = ", args.itr)
+        ITR=args.itr
+
+    if args.dvfs:
+        print("DVFS = ", args.dvfs)
+        DVFS=args.dvfs
+
+    if args.rapl:
+        print("RAPL = ", args.rapl)
+        RAPL=args.rapl
+
+    if args.nrepeat:
+        print("NREPEAT = ", args.nrepeat)
+        NREPEAT = int(args.nrepeat)
+
+    if args.cores:
+        print("NCORES = ", args.cores)
+        NCORES = int(args.cores)
+
+    if args.flinkrate:
+        print("flinkrate = ", args.flinkrate)
+        FLINKRATE = args.flinkrate
+
+    if args.bufftimeout:
+        print("BUFFTIMEOUT = ", args.bufftimeout)
+        BUFFTIMEOUT = args.bufftimeout
+
+    runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT)
+
