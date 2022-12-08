@@ -200,7 +200,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
             _flinkdur+=int(_flinkrate[i])
 
     _flinkdur=int(_flinkdur/1000)
-    print(_flinkdur)
+    print("Flink job duration: ", _flinkdur)
 
     KWD=str(NREPEAT)+"_"+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL)
     init(KWD)
