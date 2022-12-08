@@ -16,7 +16,6 @@ jarpath='./flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dep
 jmip=bootstrap
 jmpt=8081
 
-
 def stopflink():
     print(os.popen("cp -r ./flink-cfg/* "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/conf/").read())
     print("stopping flink...")
@@ -107,25 +106,23 @@ def setDVFS(v):
     DVFS = v
 
 
-def init():
+def init(KWD):
     runcmd('mkdir logs')
     runcmd('mkdir logs/Flinklogs_'+KWD)
     runcmd('mkdir logs/ITRlogs_'+KWD)
-    runcmd('mkdir logs/ITRlogs_'+KWD+'/'+bootstrap.replace('.','_'))
-    runcmd('mkdir logs/ITRlogs_'+KWD+'/'+victim.replace('.','_'))
     runcmd('mkdir logs/Flinklogs_'+KWD+'/'+bootstrap.replace('.','_'))
     runcmd('mkdir logs/Flinklogs_'+KWD+'/'+victim.replace('.','_'))
 
 # get ITR logs from victim node
-def getITRlogs(cores):
+def getITRlogs(KWD, cores):
     for i in range(cores):
         gcmd="cat /proc/ixgbe_stats/core/"+str(i)+" &> /app/flink_dmesg."+str(i)
         runcmd('ssh ' + victim + ' "' + gcmd + '"')
-        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+" ./logs/ITRlogs_"+KWD+"/"+victim.replace('.','_')+"linux.flink.dmesg."+"_"+str(i)
+        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+" ./logs/ITRlogs_"+KWD+"/"+"linux.flink.dmesg."+"_"+str(i)
         runcmd(gcmd)
 
 # get Flink logs 
-def getFlinkLog(edir, _clock, interval):
+def getFlinkLog(KWD, rest_client, job_id, edir, _clock, interval):
     tmid=[]
     for tm in rest_client.taskmanagers.all():
         tmid.append(tm['id'])
@@ -206,7 +203,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     print(_flinkdur)
 
     KWD=str(NREPEAT)+"_"+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL)
-    init()
+    init(KWD)
 
     # run a flink job
     stopflink()
@@ -224,8 +221,8 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     # time.sleep(60)
 
     # get ITR log + flink log
-    getFlinkLog("./logs/Flinklogs_"+KWD+"/", _flinkdur, 10)    # run _flinkdur sec, and record metrics every 10 sec
-    getITRlogs(NCORES)
+    getFlinkLog(KWD, rest_client, job_id, "./logs/Flinklogs_"+KWD+"/", _flinkdur, 10)    # run _flinkdur sec, and record metrics every 10 sec
+    getITRlogs(KWD, NCORES)
 
     stopflink()
 
