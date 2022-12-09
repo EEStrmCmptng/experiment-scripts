@@ -233,8 +233,8 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
         latency_list[ff]=parseFlinkLatency(flinklogdir+bootstrap.replace('.','_')+"/"+ff)
         latency_avg[ff]=np.average(latency_list[ff])
 
-    print(latency_list)
-    print(latency_avg)
+    print('latency in flink log: ', latency_list)
+    print('average latency in flink log', latency_avg)
 
 
 
