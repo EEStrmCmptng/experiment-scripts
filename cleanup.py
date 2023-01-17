@@ -58,7 +58,7 @@ def exists(i, itr, d, rapl, core):
 
 
 def cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
-    KWD=FLINKRATE+"_"+BUFFTIMEOUT+'_'+ITR+"_"+DVFS+'_'+RAPL+'_'+str(NREPEAT)
+    KWD=FLINKRATE+"_"+BUFFTIMEOUT+'_'+str(ITR)+"_"+str(DVFS)+'_'+str(RAPL)+'_'+str(NREPEAT)
     file_path = loc+'/logs/clean/'+str(FLINKRATE)+"_"+str(BUFFTIMEOUT)+'.csv'
     sys.stdout = open(file_path, "a")
     LINUX_COLS = ['i', 'rx_desc', 'rx_bytes', 'tx_desc', 'tx_bytes', 'instructions', 'cycles', 'ref_cycles', 'llc_miss', 'c0', 'c1', 'c1e', 'c3', 'c6', 'c7', 'joules', 'timestamp']
@@ -101,71 +101,68 @@ def cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     tnum_interrupts = 0
 
 
-    for d in DVFS:
-        for itr in ITR:
-            for rapl in RAPL:
-                for i in range(0, NREPEAT):
-                    fnames=os.listdir(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/')
-                    latency_list={}
-                    latency_avg={}
-                    for ff in fnames:
-                        latency_list[ff]=parseFlinkLatency(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/'+ff)
-                        latency_avg[ff]=np.average(latency_list[ff])
-                    START_RDTSC = 0
-                    END_RDTSC = 0
-                    tdiff = 0
-                    tins = 0
-                    tcyc = 0
-                    trefcyc = 0
-                    tllcm = 0
-                    tc3 = 0
-                    tc6 = 0
-                    tc7 = 0
-                    tjoules = 0
-                    tc1 = 0
-                    tc1e = 0
-                    num_interrupts = 0
-                    trx_desc = 0
-                    trx_bytes = 0
-                    ttx_desc = 0
-                    ttx_bytes = 0
-                    tnum_interrupts = 0
+    for i in range(0, NREPEAT):
+        fnames=os.listdir(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/')
+        latency_list={}
+        latency_avg={}
+        for ff in fnames:
+            latency_list[ff]=parseFlinkLatency(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/'+ff)
+            latency_avg[ff]=np.average(latency_list[ff])
+        START_RDTSC = 0
+        END_RDTSC = 0
+        tdiff = 0
+        tins = 0
+        tcyc = 0
+        trefcyc = 0
+        tllcm = 0
+        tc3 = 0
+        tc6 = 0
+        tc7 = 0
+        tjoules = 0
+        tc1 = 0
+        tc1e = 0
+        num_interrupts = 0
+        trx_desc = 0
+        trx_bytes = 0
+        ttx_desc = 0
+        ttx_bytes = 0
+        tnum_interrupts = 0
 
 
-                    for core in range(0, 10):
-                        fname = f'{loc}/logs/'+KWD+'/ITRlogs/linux.flink.dmesg.'+'_'+str(core)
-                        df = pd.read_csv(fname, sep=' ', names=LINUX_COLS)
-                        df_non0j = df[(df['joules']>0) & (df['instructions'] > 0) & (df['ref_cycles'] > 0)].copy()
-                        df_non0j['timestamp'] = df_non0j['timestamp'] - df_non0j['timestamp'].min()
-                        df_non0j['timestamp'] = df_non0j['timestamp'] * TIME_CONVERSION_khz
-                        df_non0j['joules'] = df_non0j['joules'] * JOULE_CONVERSION
+        for core in range(0, NCORES):
+            fname = f'{loc}/logs/'+KWD+'/ITRlogs/linux.flink.dmesg.'+'_'+str(core)
+            df = pd.read_csv(fname, sep=' ', names=LINUX_COLS)
+            df_non0j = df[(df['joules']>0) & (df['instructions'] > 0) & (df['ref_cycles'] > 0)].copy()
+            df_non0j['timestamp'] = df_non0j['timestamp'] - df_non0j['timestamp'].min()
+            df_non0j['timestamp'] = df_non0j['timestamp'] * TIME_CONVERSION_khz
+            df_non0j['joules'] = df_non0j['joules'] * JOULE_CONVERSION
 
-                        tmp = df_non0j[['instructions', 'ref_cycles', 'joules', 'c1', 'c1e', 'c3', 'c6', 'c7']].diff()
-                        tmp.columns = [f'{c}_diff' for c in tmp.columns]
-                        df_non0j = pd.concat([df_non0j, tmp], axis=1)
-                        df_non0j.dropna(inplace=True)
-                        df.dropna(inplace=True)
-                        df_non0j = df_non0j[df_non0j['joules_diff'] > 0]
-                        cjoules = df_non0j['joules_diff'].sum()
-                        if core == 0 or core == 1:
-                            tjoules += cjoules
-                        trx_desc += df['rx_desc'].sum()
-                        trx_bytes += df['rx_bytes'].sum()
-                        ttx_desc += df['tx_desc'].sum()
-                        ttx_bytes += df['tx_bytes'].sum()
-                        tins += df_non0j['instructions_diff'].sum()
-                        #tcyc += df_non0j['cycles_diff'].sum()
-                        trefcyc += df_non0j['ref_cycles_diff'].sum()
-                        #tllcm += df_non0j['llc_miss_diff'].sum()
-                        #tc1 += df_non0j['c1_diff'].sum()
-                        #tc1e += df_non0j['c1e_diff'].sum()
-                        #tc3 += df_non0j['c3_diff'].sum()
-                        #tc6 += df_non0j['c6_diff'].sum()
-                        #tc7 += df_non0j['c7_diff'].sum()
-                        tnum_interrupts += df.shape[0]
+            tmp = df_non0j[['instructions', 'ref_cycles', 'joules', 'c1', 'c1e', 'c3', 'c6', 'c7']].diff()
+            tmp.columns = [f'{c}_diff' for c in tmp.columns]
+            df_non0j = pd.concat([df_non0j, tmp], axis=1)
+            df_non0j.dropna(inplace=True)
+            df.dropna(inplace=True)
+            df_non0j = df_non0j[df_non0j['joules_diff'] > 0]
+            cjoules = df_non0j['joules_diff'].sum()
+            if core == 0 or core == 1:
+                tjoules += cjoules
+            trx_desc += df['rx_desc'].sum()
+            trx_bytes += df['rx_bytes'].sum()
+            ttx_desc += df['tx_desc'].sum()
+            ttx_bytes += df['tx_bytes'].sum()
+            tins += df_non0j['instructions_diff'].sum()
+            #tcyc += df_non0j['cycles_diff'].sum()
+            trefcyc += df_non0j['ref_cycles_diff'].sum()
+            #tllcm += df_non0j['llc_miss_diff'].sum()
+            #tc1 += df_non0j['c1_diff'].sum()
+            #tc1e += df_non0j['c1e_diff'].sum()
+            #tc3 += df_non0j['c3_diff'].sum()
+            #tc6 += df_non0j['c6_diff'].sum()
+            #tc7 += df_non0j['c7_diff'].sum()
+            tnum_interrupts += df.shape[0]
 
-                        #print(f"linux_core_tuned {i} {core} {itr} {d} {rapl} {read_5th} {read_10th} {read_50th} {read_90th} {read_95th} {read_99th} {mqps} {cqps} {tdiff} {round(cjoules, 2)} {df['rx_desc'].sum()} {df['rx_bytes'].sum()} {df['tx_desc'].sum()} {df['tx_bytes'].sum()} {int(df_non0j['instructions_diff'].sum())} {int(df_non0j['ref_cycles_diff'].sum())} {df.shape[0]}")
-                        print(f"flink {i} {itr} {d} {rapl} {latency} {np.around(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts}")
+            #print(f"linux_core_tuned {i} {core} {itr} {d} {rapl} {read_5th} {read_10th} {read_50th} {read_90th} {read_95th} {read_99th} {mqps} {cqps} {tdiff} {round(cjoules, 2)} {df['rx_desc'].sum()} {df['rx_bytes'].sum()} {df['tx_desc'].sum()} {df['tx_bytes'].sum()} {int(df_non0j['instructions_diff'].sum())} {int(df_non0j['ref_cycles_diff'].sum())} {df.shape[0]}")
+            print(f"flink {i} {ITR} {DVFS} {RAPL} {latency} {np.around(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts}")
 
 
 if __name__ == '__main__':
@@ -184,7 +181,7 @@ if __name__ == '__main__':
  
     if args.itr:
         print("ITR = ", args.itr)
-        ITR=args.itr
+        ITR=int(args.itr)
 
     if args.dvfs:
         print("DVFS = ", args.dvfs)
@@ -192,7 +189,7 @@ if __name__ == '__main__':
 
     if args.rapl:
         print("RAPL = ", args.rapl)
-        RAPL=args.rapl
+        RAPL=int(args.rapl)
 
     if args.nrepeat:
         print("NREPEAT = ", args.nrepeat)
