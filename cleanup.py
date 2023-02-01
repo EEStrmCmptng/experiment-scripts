@@ -59,8 +59,8 @@ def exists(i, itr, d, rapl, core):
 
 def cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     KWD=FLINKRATE+"_"+BUFFTIMEOUT+'_'+str(ITR)+"_"+str(DVFS)+'_'+str(RAPL)+'_'+str(NREPEAT)
-    file_path = loc+'/logs/clean/'+str(FLINKRATE)+"_"+str(BUFFTIMEOUT)+'.csv'
-    sys.stdout = open(file_path, "a")
+    #file_path = loc+'/logs/clean/'+str(FLINKRATE)+'_'+str(BUFFTIMEOUT)+'_'+str(ITR)+'_'+str(DVFS)+'.csv'
+    #sys.stdout = open(file_path, "a")
     LINUX_COLS = ['i', 'rx_desc', 'rx_bytes', 'tx_desc', 'tx_bytes', 'instructions', 'cycles', 'ref_cycles', 'llc_miss', 'c0', 'c1', 'c1e', 'c3', 'c6', 'c7', 'joules', 'timestamp']
     '''
     system("$datadir='/mnt/eestreaming-refactor/experiment-scripts/logs/'")
@@ -105,9 +105,12 @@ def cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
         fnames=os.listdir(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/')
         latency_list={}
         latency_avg={}
+        final_latency={}
         for ff in fnames:
-            latency_list[ff]=parseFlinkLatency(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/'+ff)
-            latency_avg[ff]=np.average(latency_list[ff])
+            latency_list[ff] = parseFlinkLatency(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/'+ff)
+            if latency_list[ff] != []:
+                latency_avg[ff]=np.average(latency_list[ff]) 
+                final_latency[i]=latency_avg[ff]
         START_RDTSC = 0
         END_RDTSC = 0
         tdiff = 0
@@ -162,7 +165,7 @@ def cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
             tnum_interrupts += df.shape[0]
 
             #print(f"linux_core_tuned {i} {core} {itr} {d} {rapl} {read_5th} {read_10th} {read_50th} {read_90th} {read_95th} {read_99th} {mqps} {cqps} {tdiff} {round(cjoules, 2)} {df['rx_desc'].sum()} {df['rx_bytes'].sum()} {df['tx_desc'].sum()} {df['tx_bytes'].sum()} {int(df_non0j['instructions_diff'].sum())} {int(df_non0j['ref_cycles_diff'].sum())} {df.shape[0]}")
-            print(f"flink {i} {ITR} {DVFS} {RAPL} {latency} {np.around(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts}")
+            print(f"flink {i} {ITR} {DVFS} {RAPL} {latency} {np.around(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts} {final_latency[i]}",file=sys.stdout)
 
 
 if __name__ == '__main__':
@@ -180,31 +183,31 @@ if __name__ == '__main__':
     args = parser.parse_args()
  
     if args.itr:
-        print("ITR = ", args.itr)
+        #print("ITR = ", args.itr)
         ITR=int(args.itr)
 
     if args.dvfs:
-        print("DVFS = ", args.dvfs)
+        #print("DVFS = ", args.dvfs)
         DVFS=args.dvfs
 
     if args.rapl:
-        print("RAPL = ", args.rapl)
+        #print("RAPL = ", args.rapl)
         RAPL=int(args.rapl)
 
     if args.nrepeat:
-        print("NREPEAT = ", args.nrepeat)
+        #print("NREPEAT = ", args.nrepeat)
         NREPEAT = int(args.nrepeat)
 
     if args.cores:
-        print("NCORES = ", args.cores)
+        #print("NCORES = ", args.cores)
         NCORES = int(args.cores)
 
     if args.flinkrate:
-        print("flinkrate = ", args.flinkrate)
+        #print("flinkrate = ", args.flinkrate)
         FLINKRATE = args.flinkrate
 
     if args.bufftimeout:
-        print("BUFFTIMEOUT = ", args.bufftimeout)
+        #print("BUFFTIMEOUT = ", args.bufftimeout)
         BUFFTIMEOUT = args.bufftimeout
 
     cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT)

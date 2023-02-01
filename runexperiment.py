@@ -6,7 +6,7 @@ import numpy as np
 ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
 FLINKROOT='/mnt/eestreaming-refactor/experiment-scripts/flink-simplified/'
-print(FLINKROOT)
+#print(FLINKROOT)
 
 # the script will run on bootstrap
 bootstrap='192.168.1.153'   # jobmanager
@@ -243,8 +243,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--cores", help="num of cpu cores")
     parser.add_argument("--rapl", help="Rapl power limit [35, 135]")
-    parser.add_argument("--itr", help="Static interrupt delay [10, 500]")
-    parser.add_argument("--dvfs", help="DVFS value [0xc00 - 0x1d00]")
+    parser.add_argument("--itr", help="Static interrupt delay [2, 1024]")
+    parser.add_argument("--dvfs", help="Static DVFS value [0xc00 - 0x1d00]")
     parser.add_argument("--nrepeat", help="repeat value")
     parser.add_argument("--verbose", help="Print mcd raw stats")
     parser.add_argument("--flinkrate", help="input rate of Flink query")
