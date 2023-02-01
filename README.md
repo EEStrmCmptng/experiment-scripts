@@ -34,3 +34,14 @@ In `flink-cfg`
 eg: 
 
 `python3 runexperiment.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_100000 --cores 16`
+
+## run cleanup script
+
+eg: 
+
+`python3 cleanup.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_100000 --cores 16`
+
+## run both
+
+Add all sweep values at the top of `run_total.sh`
+Run `./run_total.sh`
