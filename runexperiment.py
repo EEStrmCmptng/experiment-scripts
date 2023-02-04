@@ -1,7 +1,7 @@
 from flink_rest_client import FlinkRestClient
 import sys, os, time, json, requests, argparse
 import numpy as np
-
+import pandas as pd
 
 ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
@@ -147,7 +147,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
                     t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
                     #print(vts, vname, vpall, ttm, tid, t_busytime, t_backpressure, t_idletime, t_opsin, t_opsout)
-                    ff=open(flinklogdir+'/'+vname+'_'+tid, 'a')
+                    ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
         time.sleep(interval)
         clock-=interval
@@ -170,6 +170,34 @@ def parseFlinkLatency(filename):
         result.append(int(draft[i][:draft[i].index("%")]))
     f.close()
     return result
+
+
+def parseFinkMetrics(flinklogdir):
+    fnames=os.listdir(flinklogdir)
+    explist=[]
+    for fn in fnames:
+        if('Operator_' in fn):
+            kwlist={'numRecordsInPerSecond':[], 'numRecordsOutPerSecond':[], 'busyTimeMsPerSecond':[], 'backPressuredTimeMsPerSecond':[]}
+            ff=open(flinklogdir+'/'+fn, 'r').readlines()
+            fcnt=0
+            for _ll, _lc in enumerate(ff):
+                for lc in _lc.split('; '):
+                    for kw in kwlist.keys():
+                        if(kw in lc):
+                            ldict=eval(lc.replace('[','').replace(']',''))
+                            kwlist[kw].append(float(ldict['value']))
+                            fcnt+=1
+            print(fn,fcnt)
+            exp=dict()
+            exp['name']=fn
+            for kw in kwlist.keys():
+                exp[kw+'_avg']=np.average(np.nan_to_num(np.array(kwlist[kw])))
+                print(kw,np.array(kwlist[kw]),  exp[kw+'_avg'])
+            explist.append(exp)
+    expdf=pd.DataFrame(explist).fillna(0)
+    # expdf['true_input_rate']=expdf['numRecordsInPerSecond_avg']/(expdf['busyTimeMsPerSecond_avg']/1000)
+    # expdf=expdf.sort_values(by = ['numRecordsOutPerSecond_avg', 'latency_avg', 'latency_max'], ascending = [True, True, True])
+    print(expdf)
 
 
 def upload_jar(fpath):
@@ -236,6 +264,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     print('latency in flink log: ', latency_list)
     print('average latency in flink log', latency_avg)
 
+    parseFinkMetrics(flinklogdir)
 
 
 if __name__ == '__main__':
