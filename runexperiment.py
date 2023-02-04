@@ -192,7 +192,7 @@ def parseFinkMetrics(flinklogdir):
             exp['name']=fn
             for kw in kwlist.keys():
                 exp[kw+'_avg']=np.average(np.nan_to_num(np.array(kwlist[kw])))
-                print(kw,np.array(kwlist[kw]),  exp[kw+'_avg'])
+                print(kw, kwlist[kw])
             explist.append(exp)
     expdf=pd.DataFrame(explist).fillna(0)
     # expdf['true_input_rate']=expdf['numRecordsInPerSecond_avg']/(expdf['busyTimeMsPerSecond_avg']/1000)
@@ -237,12 +237,12 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     stopflink()
     startflink()
     time.sleep(20)
-    #./flink-simplified/build-target/bin/flink run ./flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dependencies.jar --ratelist 100_1000 --buffer-Timeout 20
+    #./flink-simplified/build-target/bin/flink run ./flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dependencies.jar --ratelist 100_1000 --bufferTimeout 20
     rest_client = FlinkRestClient.get(host=jmip, port=jmpt)
     rest_client.overview()
     ur = upload_jar(jarpath)
     jar_id = ur['filename'].split('/')[-1]
-    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'buffer-Timeout': BUFFTIMEOUT})
+    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT})
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print("deployed job id=", job_id)
@@ -277,7 +277,7 @@ if __name__ == '__main__':
     parser.add_argument("--nrepeat", help="repeat value")
     parser.add_argument("--verbose", help="Print mcd raw stats")
     parser.add_argument("--flinkrate", help="input rate of Flink query")
-    parser.add_argument("--bufftimeout", help="buffer-Timeout in Flink")
+    parser.add_argument("--bufftimeout", help="bufferTimeout in Flink")
     parser.add_argument("--runcmd", help="runexp/stopflink/plot")
     args = parser.parse_args()
 
