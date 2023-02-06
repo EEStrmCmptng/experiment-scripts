@@ -172,7 +172,7 @@ def parseFlinkLatency(filename):
     return result
 
 
-def parseFinkMetrics(flinklogdir):
+def parseFlinkMetrics(flinklogdir):
     fnames=os.listdir(flinklogdir)
     explist=[]
     for fn in fnames:
@@ -264,7 +264,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     print('latency in flink log: ', latency_list)
     print('average latency in flink log', latency_avg)
 
-    parseFinkMetrics(flinklogdir)
+    parseFlinkMetrics(flinklogdir)
 
 
 if __name__ == '__main__':
