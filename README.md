@@ -5,7 +5,7 @@
 git clone --branch refactor git@github.com:EEStrmCmptng/experiment-scripts.git
 cd experiment-scripts
 git clone git@github.com:EEStrmCmptng/flink-benchmarks.git
-git clone --branch energy git@github.com:pentium3/cs551-flink.git flink-simplified
+git clone --branch energy git@github.com:pentium3/flink-placement.git flink-simplified
 ```
 
 
