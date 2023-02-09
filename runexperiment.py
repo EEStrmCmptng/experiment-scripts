@@ -174,11 +174,13 @@ def parseFlinkLatency(filename):
 
 def parseFlinkMetrics(flinklogdir):
     fnames=os.listdir(flinklogdir)
+    print("--------------------------------------------------------------------------------------")
     print("parseFlinkMetrics on : "+flinklogdir)
     explist=[]
     for fn in fnames:
         #if('Operator_' in fn):
         if(os.path.isfile(flinklogdir+'/'+fn)):
+            print("------------------------------------------------------------------------------------------")
             kwlist={'numRecordsInPerSecond':[], 'numRecordsOutPerSecond':[], 'busyTimeMsPerSecond':[], 'backPressuredTimeMsPerSecond':[]}
             ff=open(flinklogdir+'/'+fn, 'r').readlines()
             fcnt=0
@@ -199,6 +201,7 @@ def parseFlinkMetrics(flinklogdir):
     expdf=pd.DataFrame(explist).fillna(0)
     # expdf['true_input_rate']=expdf['numRecordsInPerSecond_avg']/(expdf['busyTimeMsPerSecond_avg']/1000)
     # expdf=expdf.sort_values(by = ['numRecordsOutPerSecond_avg', 'latency_avg', 'latency_max'], ascending = [True, True, True])
+    print("-------------------------------------------------------------------------------------")
     print(expdf)
 
 
