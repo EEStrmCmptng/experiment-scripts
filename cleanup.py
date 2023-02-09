@@ -112,7 +112,6 @@ def cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
             if latency_list[ff] != []:
                 latency_avg[ff]=np.average(latency_list[ff]) 
                 final_latency[i]=latency_avg[ff]
-        parseFlinkMetrics(flinklogdir)
         
         START_RDTSC = 0
         END_RDTSC = 0
@@ -169,7 +168,8 @@ def cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
 
             #print(f"linux_core_tuned {i} {core} {itr} {d} {rapl} {read_5th} {read_10th} {read_50th} {read_90th} {read_95th} {read_99th} {mqps} {cqps} {tdiff} {round(cjoules, 2)} {df['rx_desc'].sum()} {df['rx_bytes'].sum()} {df['tx_desc'].sum()} {df['tx_bytes'].sum()} {int(df_non0j['instructions_diff'].sum())} {int(df_non0j['ref_cycles_diff'].sum())} {df.shape[0]}")
             print(f"flink {i} {ITR} {DVFS} {RAPL} {latency} {np.around(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {trefcyc} {tnum_interrupts} {final_latency[i]}",file=sys.stdout)
-
+        
+        parseFlinkMetrics(flinklogdir)
 
 if __name__ == '__main__':
     # python3 cleanup.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_100000 --cores 16
