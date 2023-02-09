@@ -174,9 +174,11 @@ def parseFlinkLatency(filename):
 
 def parseFlinkMetrics(flinklogdir):
     fnames=os.listdir(flinklogdir)
+    print("parseFlinkMetrics on : "+flinklogdir)
     explist=[]
     for fn in fnames:
-        if('Operator_' in fn):
+        #if('Operator_' in fn):
+        if(os.path.isfile(flinklogdir+'/'+fn)):
             kwlist={'numRecordsInPerSecond':[], 'numRecordsOutPerSecond':[], 'busyTimeMsPerSecond':[], 'backPressuredTimeMsPerSecond':[]}
             ff=open(flinklogdir+'/'+fn, 'r').readlines()
             fcnt=0
