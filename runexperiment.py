@@ -252,7 +252,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     _flinkdur=int(_flinkdur/1000)
     print("Flink job duration: ", _flinkdur)
 
-    KWD=str(NCORES)+"_"+str(FLINKRATE)+"_"+str(BUFFTIMEOUT)+'_'+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL)+'_'+str(NREPEAT)
+    KWD="cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_dvfs"+str(DVFS)+"_rapl"+str(RAPL)+'_repeat'+str(NREPEAT)
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
