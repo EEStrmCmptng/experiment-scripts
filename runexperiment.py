@@ -103,10 +103,11 @@ def setCores(nc):
         runcmd('echo 0 > /sys/devices/system/cpu/cpu'+i+'/online')
         runcmd('ssh ' + victim + ' "echo 0 > /sys/devices/system/cpu/cpu'+i+'/online"')
     time.sleep(10)
+    catcpustr='for file in /sys/devices/system/cpu/cpu*/online; do echo "$file: $(cat $file)"; done'
     print(" -------------------- setCores on local --------------------")
-    runcmd('for file in /sys/devices/system/cpu/cpu*/online; do echo "$file: $(cat $file)"; done')
+    runcmd(catcpustr)
     print(" -------------------- setCores on victim --------------------")
-    runcmd('ssh ' + victim + ' "for file in /sys/devices/system/cpu/cpu*/online; do echo "$file: $(cat $file)"; done"')
+    runcmd('ssh ' + victim + "'"+catcpustr+"''")
 
 # set ITR configurations on victim node
 def setITR(v):
