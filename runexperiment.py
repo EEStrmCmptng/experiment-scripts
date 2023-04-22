@@ -347,4 +347,4 @@ if __name__ == '__main__':
         BUFFTIMEOUT = args.bufftimeout
 
     runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT)
-
+    resetAllCores()
