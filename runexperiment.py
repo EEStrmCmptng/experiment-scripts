@@ -7,6 +7,7 @@ ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
 FLINKROOT='/mnt/eestreaming-refactor/experiment-scripts/flink-simplified/'
 #print(FLINKROOT)
+MAXCORES=32    # num of cores
 
 # the script will run on bootstrap
 bootstrap='192.168.1.153'   # jobmanager
@@ -86,6 +87,24 @@ def runcmd(cmd):
     print(res)
     print('------------------------------------------------------------')
 
+
+def resetAllCores():
+    # turn on all cores
+    for i in range(MAXCORES):
+        runcmd('echo 1 > /sys/devices/system/cpu/cpu'+i+'/online')
+        runcmd('ssh ' + victim + ' "echo 1 > /sys/devices/system/cpu/cpu'+i+'/online"')
+    time.sleep(10)
+
+def setCores(nc):
+    # only keep N cores online
+    for i in range(nc, MAXCORES):
+        runcmd('echo 0 > /sys/devices/system/cpu/cpu'+i+'/online')
+        runcmd('ssh ' + victim + ' "echo 0 > /sys/devices/system/cpu/cpu'+i+'/online"')
+    time.sleep(10)
+    print(" -------------------- setCores on local --------------------")
+    runcmd('cat /sys/devices/system/cpu/cpu*/online')
+    print(" -------------------- setCores on victim --------------------")
+    runcmd('ssh ' + victim + ' "cat /sys/devices/system/cpu/cpu*/online"')
 
 # set ITR configurations on victim node
 def setITR(v):
@@ -215,6 +234,8 @@ def upload_jar(fpath):
 
 
 def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
+    resetAllCores()
+    setCores(NCORES)
     setITR(ITR)
     setDVFS(DVFS)
     setRAPL(RAPL)
