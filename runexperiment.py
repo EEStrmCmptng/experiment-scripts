@@ -90,14 +90,16 @@ def runcmd(cmd):
 
 def resetAllCores():
     # turn on all cores
-    for i in range(MAXCORES):
+    for _i in range(MAXCORES):
+        i=str(_i)
         runcmd('echo 1 > /sys/devices/system/cpu/cpu'+i+'/online')
         runcmd('ssh ' + victim + ' "echo 1 > /sys/devices/system/cpu/cpu'+i+'/online"')
     time.sleep(10)
 
 def setCores(nc):
     # only keep N cores online
-    for i in range(nc, MAXCORES):
+    for _i in range(nc, MAXCORES):
+        i=str(_i)
         runcmd('echo 0 > /sys/devices/system/cpu/cpu'+i+'/online')
         runcmd('ssh ' + victim + ' "echo 0 > /sys/devices/system/cpu/cpu'+i+'/online"')
     time.sleep(10)
