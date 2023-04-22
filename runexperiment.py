@@ -107,7 +107,7 @@ def setCores(nc):
     print(" -------------------- setCores on local --------------------")
     runcmd(catcpustr)
     print(" -------------------- setCores on victim --------------------")
-    runcmd('ssh ' + victim + " '"+catcpustr+"''")
+    runcmd('ssh ' + victim + " '"+catcpustr+"' ")
 
 # set ITR configurations on victim node
 def setITR(v):
