@@ -252,7 +252,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     _flinkdur=int(_flinkdur/1000)
     print("Flink job duration: ", _flinkdur)
 
-    KWD=str(FLINKRATE)+"_"+str(BUFFTIMEOUT)+'_'+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL)+'_'+str(NREPEAT)
+    KWD=str(NCORES)+"_"+str(FLINKRATE)+"_"+str(BUFFTIMEOUT)+'_'+str(ITR)+"_"+str(DVFS)+"_"+str(RAPL)+'_'+str(NREPEAT)
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
@@ -307,7 +307,7 @@ if __name__ == '__main__':
     parser.add_argument("--verbose", help="Print mcd raw stats")
     parser.add_argument("--flinkrate", help="input rate of Flink query")
     parser.add_argument("--bufftimeout", help="bufferTimeout in Flink")
-    parser.add_argument("--runcmd", help="runexp/stopflink/plot")
+    parser.add_argument("--runcmd", help="startflink/stopflink")
     args = parser.parse_args()
 
     if args.runcmd:
