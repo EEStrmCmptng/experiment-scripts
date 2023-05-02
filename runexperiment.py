@@ -2,6 +2,7 @@ from flink_rest_client import FlinkRestClient
 import sys, os, time, json, requests, argparse
 import numpy as np
 import pandas as pd
+import datetime
 
 ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
@@ -129,11 +130,11 @@ def setDVFS(v):
 
 
 # get ITR logs from victim node
-def getITRlogs(KWD, cores, itrlogsdir):
+def getITRlogs(KWD, cores, itrlogsdir,NREPEAT):
     for i in range(cores):
-        gcmd="cat /proc/ixgbe_stats/core/"+str(i)+" &> /app/flink_dmesg."+str(i)
+        gcmd="cat /proc/ixgbe_stats/core/"+str(i)+" &> /app/flink_dmesg."+str(i)+"_"+str(NREPEAT)
         runcmd('ssh ' + victim + ' "' + gcmd + '"')
-        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+" "+itrlogsdir+"linux.flink.dmesg."+"_"+str(i)
+        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+"_"+str(NREPEAT)+" "+itrlogsdir+"linux.flink.dmesg."+"_"+str(i)+"_"+str(NREPEAT)
         runcmd(gcmd)
 
 # get Flink logs 
@@ -265,6 +266,9 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     # run a flink job
     stopflink()
     startflink()
+    with open("time.txt", "a") as f:
+        ct = datetime.datetime.now()
+        print("Time flink started:",ct,file=f)
     time.sleep(20)
     #./flink-simplified/build-target/bin/flink run ./flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dependencies.jar --ratelist 100_1000 --bufferTimeout 20
     rest_client = FlinkRestClient.get(host=jmip, port=jmpt)
@@ -275,14 +279,16 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print("deployed job id=", job_id)
-    # time.sleep(60)
+    time.sleep(30)
 
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur, 10)    # run _flinkdur sec, and record metrics every 10 sec
-    getITRlogs(KWD, NCORES, itrlogsdir)
+    getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
 
     stopflink()
-
+    with open("time.txt","a") as f:
+        ct2 = datetime.datetime.now()
+        print("Time flink stopped:",ct2, file=f)
     fnames=os.listdir(flinklogdir+bootstrap.replace('.','_')+"/")
     latency_list={}
     latency_avg={}

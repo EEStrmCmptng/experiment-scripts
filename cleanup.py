@@ -100,16 +100,16 @@ def cleanup(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     tjoules = 0.0
     tnum_interrupts = 0
 
-    fnames=os.listdir(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/')
-    flinklogdir=loc+'/logs/'+KWD+"/Flinklogs/"
+    #fnames=os.listdir(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/')
+    #flinklogdir=loc+'/logs/'+KWD+"/Flinklogs/"
     latency_list={}
     latency_avg={}
     final_latency={}
-    for ff in fnames:
-        latency_list[ff] = parseFlinkLatency(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/'+ff)
-        if latency_list[ff] != []:
-            latency_avg[ff]=np.average(latency_list[ff]) 
-            final_latency=latency_avg[ff]
+    #for ff in fnames:
+    #    latency_list[ff] = parseFlinkLatency(loc+'/logs/'+KWD+'/Flinklogs/'+bootstrap_+'/'+ff)
+    #       if latency_list[ff] != []:
+    #        latency_avg[ff]=np.average(latency_list[ff]) 
+    #        final_latency=latency_avg[ff]
     
     START_RDTSC = 0
     END_RDTSC = 0
