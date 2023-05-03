@@ -47,7 +47,7 @@ for fr in $FLINK_RATE; do
 	           for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
 		      echo "[INFO] Run Experiment"
 		      echo "[INFO] BEGIN: --itr ${itr} --rapl ${r} --dvfs ${dvfs} --nrepeat ${i}"
-		      python3 cleanup.py --flinkrate ${fr} --bufftimeout ${buff} --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --rapl ${r} >> logs/clean/${currdate}/${FLINK_RATE}_${BUFF}.csv
+		      python3 clean_flink.py cores${NCORES}_frate${fr}_fbuff${buff}_itr${itr}_dvfs${dvfs}_rapl${r}_repeat${i} $i >> logs/clean/${currdate}/${FLINK_RATE}_${BUFF}.csv
 		      sleep 1
 		      echo "[INFO] FINISHED"
 		    done

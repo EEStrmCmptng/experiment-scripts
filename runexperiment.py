@@ -111,6 +111,8 @@ def setCores(nc):
     runcmd('ssh ' + victim + " '"+catcpustr+"' ")
 
 # set ITR configurations on victim node
+# dynamic ITR = 1
+# HOWTO check ITR value: ssh 192.168.1.11 /app/ethtool-4.5/ethtool -c eth0
 def setITR(v):
     runcmd('ssh ' + victim + ' "/app/ethtool-4.5/ethtool -C eth0 rx-usecs '+v+'"')
     time.sleep(0.5)
@@ -122,9 +124,14 @@ def setRAPL(v):
         time.sleep(0.5)
         RAPL = int(v)
 
+# HOWTO check DVFS policy: ssh 192.168.1.11 /app/perf/display_dvfs_governors.sh
 def setDVFS(v):
     if ITR != 1:
         runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
+        time.sleep(0.5)
+    else:
+        # dynamic DVFS = ondemand
+        runcmd('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh ondemand"')
         time.sleep(0.5)
     DVFS = v
 
