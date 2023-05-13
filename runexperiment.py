@@ -13,10 +13,11 @@ MAXCORES=32    # num of cores
 # the script will run on bootstrap
 bootstrap='192.168.1.153'   # jobmanager
 victim='192.168.1.11'       # scp logs from victim to bootstrap
-jarpath='./flink-benchmarks/target/kinesisBenchmarkMoc-1.1-SNAPSHOT-jar-with-dependencies.jar'
+jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
 
 jmip=bootstrap
 jmpt=8081
+GLOBAL_ITR=1
 
 def stopflink():
     print(os.popen("cp -r ./flink-cfg/* "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/conf/").read())
@@ -114,26 +115,46 @@ def setCores(nc):
 # dynamic ITR = 1
 # HOWTO check ITR value: ssh 192.168.1.11 /app/ethtool-4.5/ethtool -c eth0
 def setITR(v):
+    global GLOBAL_ITR
+    
     runcmd('ssh ' + victim + ' "/app/ethtool-4.5/ethtool -C eth0 rx-usecs '+v+'"')
     time.sleep(0.5)
-    ITR = int(v)
+    GLOBAL_ITR = int(v)
+    print(" -------------------- setITR on victim --------------------")
+    print('ssh ' + victim + ' "/app/ethtool-4.5/ethtool -C eth0 rx-usecs '+str(GLOBAL_ITR)+'"')
+    runcmd('ssh ' + victim + ' "/app/ethtool-4.5/ethtool -c eth0"')
+    print("")
 
 def setRAPL(v):
-    if ITR != 1:
+    global GLOBAL_ITR
+    
+    if GLOBAL_ITR != 1:
         runcmd('ssh ' + victim + ' "/app/uarch-configure/rapl-read/rapl-power-mod ' + v + '"')
         time.sleep(0.5)
-        RAPL = int(v)
 
 # HOWTO check DVFS policy: ssh 192.168.1.11 /app/perf/display_dvfs_governors.sh
 def setDVFS(v):
-    if ITR != 1:
+    global GLOBAL_ITR
+    
+    print(" -------------------- setDVFS on victim --------------------")
+    if GLOBAL_ITR != 1:
+        # dynamic DVFS = userspace
+        runcmd('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh userspace"')
+        time.sleep(0.5)
+        
         runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
         time.sleep(0.5)
+        print('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
     else:
         # dynamic DVFS = ondemand
         runcmd('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh ondemand"')
         time.sleep(0.5)
-    DVFS = v
+        print('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh ondemand"')
+        runcmd('ssh ' + victim + ' "/app/perf/display_dvfs_governors.sh"')
+
+    # print CPU frequency across all cores
+    runcmd('ssh ' + victim + ' "rdmsr -a 0x199"')
+    print("")
 
 
 # get ITR logs from victim node
@@ -282,7 +303,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     rest_client.overview()
     ur = upload_jar(jarpath)
     jar_id = ur['filename'].split('/')[-1]
-    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT})
+    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'pmap': 1})
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print("deployed job id=", job_id)
