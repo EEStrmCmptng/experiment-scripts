@@ -44,6 +44,7 @@ for core in range(0, 16):
     df_non0j['timestamp'] = df_non0j['timestamp'] * TIME_CONVERSION_khz
     df_non0j['ref_cycles'] = df_non0j['ref_cycles'] * TIME_CONVERSION_khz
     df_non0j['joules'] = df_non0j['joules'] * JOULE_CONVERSION
+    df_non0j = df_non0j[(df_non0j['timestamp'] > 60) & (df_non0j['timestamp'] < 240)]
     
     tmp = df_non0j[['instructions', 'cycles', 'ref_cycles', 'llc_miss', 'joules', 'c0', 'c1', 'c1e', 'c3', 'c6', 'c7','timestamp']].diff()
     tmp.columns = [f'{c}_diff' for c in tmp.columns]
@@ -75,60 +76,28 @@ for core in range(0, 16):
     ttimestamp += df_non0j['timestamp_diff'].sum()
 
 busy_frac = trefcyc/ttimestamp
-op0_busy = pd.read_csv(loc+'/Flinklogs/Operator_Mapper_0',delimiter=';', header = None, skiprows=30, chunksize=30)
+op0_busy = pd.read_csv(loc+'/Flinklogs/Operator_Mapper_0',delimiter=';', header = None, skiprows=6, chunksize=24)
 op0_busy_df = pd.concat(op0_busy)
 op0_busy_df['busy'] = op0_busy_df.iloc[5].str.extract(r"0\.busyTimeMsPerSecond', 'value': '([\d\.]+)'").astype(float)
 #print(op0_busy_df[5].str.extract(r"0\.busyTimeMsPerSecond', 'value': '([\d\.]+)'").dropna().mean())
 op0_busy_mean = op0_busy_df['busy'].mean()
 print(op0_busy_mean)
-op1_busy = pd.read_csv(loc+'/Flinklogs/Operator_Mapper_1',delimiter=';', header = None, skiprows=30, chunksize=30)
+op1_busy = pd.read_csv(loc+'/Flinklogs/Operator_Mapper_1',delimiter=';', header = None, skiprows=6, chunksize=24)
 op1_busy_df=pd.concat(op1_busy)
 #print(op1_busy_df[5].str.extract(r"0\.busyTimeMsPerSecond', 'value': '([\d\.]+)'").dropna().mean())
 op1_busy_df['busy'] = op1_busy_df.iloc[5].str.extract(r"1\.busyTimeMsPerSecond', 'value': '([\d\.]+)'").astype(float)
 op1_busy_mean = op1_busy_df['busy'].mean()
 
-src_back = pd.read_csv(loc+'/Flinklogs/Operator_Source: Bids Source_0',delimiter=';', header = None, skiprows=30, chunksize=30)
+src_back = pd.read_csv(loc+'/Flinklogs/Operator_Source: Bids Source_0',delimiter=';', header = None, skiprows=6, chunksize=24)
 src_back_df=pd.concat(src_back)
 #print(src_back_df[6].str.extract(r"0.backPressuredTimeMsPerSecond', 'value': '([\d\.]+)'").dropna().mean())
 src_back_df['back'] = src_back_df[6].str.extract(r"0.backPressuredTimeMsPerSecond', 'value': '([\d\.]+)'" ).astype(float)
-src_back_mean = src_back_df['back'].mean()
+src_back_mean = src_back_df['back'].max()
 
-snk_busy = pd.read_csv(loc+'/Flinklogs/Operator_Latency Sink_0',delimiter=';', header = None, skiprows=30, chunksize=30)
+snk_busy = pd.read_csv(loc+'/Flinklogs/Operator_Latency Sink_0',delimiter=';', header = None, skiprows=6, chunksize=24)
 snk_busy_df=pd.concat(snk_busy)
 snk_busy_df['busy'] = snk_busy_df.iloc[5].str.extract(r"0\.busyTimeMsPerSecond', 'value': '([\d\.]+)'").astype(float)
 snk_busy_mean = snk_busy_df['busy'].mean()
 #print(snk_busy_df[5])
-
-#with open(f'{loc}/Flinklogs/Operator_Mapper_0', 'r') as file:
-#    data = file.read()
-
-#matches = re.findall(r"0\.busyTimeMsPerSecond', 'value': '([\d\.]+)'", data)
-#op0_busy = pd.DataFrame(matches)
-#op0_busy = op0_busy.astype(float)
-#op0_busy_mean = op0_busy.dropna().mean().values
-
-#with open(f'{loc}/Flinklogs/Operator_Mapper_1', 'r') as file:
-#    data = file.read()
-    
-#matches = re.findall(r"1\.busyTimeMsPerSecond', 'value': '([\d\.]+)'", data)
-#op1_busy = pd.DataFrame(matches)
-#op1_busy = op1_busy.astype(float)
-#op1_busy_mean = op1_busy.dropna().mean().values
-
-#with open(f'{loc}/Flinklogs/Operator_Source: Bids Source_0', 'r') as file:
-#    data = file.read()
-
-#matches = re.findall(r"'0.backPressuredTimeMsPerSecond', 'value': '([\d\.]+)'", data)
-#src_back = pd.DataFrame(matches)
-#src_back = src_back.astype(float)
-#src_back_mean = src_back.dropna().mean().values
-
-#with open(f'{loc}/Flinklogs/Operator_Latency Sink_0', 'r') as file:
-#    data = file.read()
-
-#matches = re.findall(r"0\.busyTimeMsPerSecond', 'value': '([\d\.]+)'", data)
-#snk_busy = pd.DataFrame(matches)
-#snk_busy = snk_busy.astype(float)
-#snk_busy_mean = snk_busy.dropna().mean().values
 
 print(f"linux_tuned {itr} {dvfs} {round(tjoules, 2)} {trx_desc} {trx_bytes} {ttx_desc} {ttx_bytes} {tins} {tcyc} {trefcyc} {busy_frac} {tllcm} {tc1} {tc1e} {tc3} {tc6} {tc7} {tnum_interrupts} {ttimestamp} {op0_busy_mean} {op1_busy_mean} {snk_busy_mean} {src_back_mean}")

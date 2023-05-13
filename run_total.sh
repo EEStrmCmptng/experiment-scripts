@@ -1,12 +1,12 @@
 #!/bin/bash
 currdate=`date +%m_%d_%Y_%H_%M_%S`
 
-export NITERS=${NITERS:='9'}
+export NITERS=${NITERS:='0'}
 export BEGIN_ITER=${BEGIN_ITER:='0'}
-export MDVFS=${MDVFS:="0x0c00 0x1100 0x1d00"}
-export ITRS=${ITRS:="10 300 600"}
+export MDVFS=${MDVFS:="0x0c00 0x1d00"}
+export ITRS=${ITRS:="10"}
 export MRAPL=${MRAPL:-"135"}
-export FLINK_RATE=${FLINK_RATE:="100000_300000"}
+export FLINK_RATE=${FLINK_RATE:="100000_420000"}
 export BUFF=${BUFF:="-1"}
 export NCORES=${NCORES:=16}
     
@@ -20,7 +20,7 @@ echo "[INFO] Input: BUFF ${BUFF}"
 echo "[INFO] Input: NCORES ${NCORES}"
 echo "[INFO] Input: mkdir ${currdate}"
 mkdir ./logs/clean/${currdate}
-touch ./logs/clean/${currdate}/${FLINK_RATE}_${BUFF}.csv
+
 for fr in $FLINK_RATE; do
     for buff in $BUFF; do
         for itr in $ITRS; do
@@ -45,9 +45,9 @@ for fr in $FLINK_RATE; do
 	   for dvfs in ${MDVFS}; do
                for r in ${MRAPL}; do
 	           for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
-		      echo "[INFO] Run Experiment"
+		      echo "[INFO] Clean up Experiment"
 		      echo "[INFO] BEGIN: --itr ${itr} --rapl ${r} --dvfs ${dvfs} --nrepeat ${i}"
-		      python3 clean_flink.py cores${NCORES}_frate${fr}_fbuff${buff}_itr${itr}_dvfs${dvfs}_rapl${r}_repeat${i} $i >> logs/clean/${currdate}/${FLINK_RATE}_${BUFF}.csv
+		      python3 clean_flink.py logs/cores${NCORES}_frate${fr}_fbuff${buff}_itr${itr}_dvfs${dvfs}_rapl${r}_repeat${i} $i >> logs/clean/${currdate}/${fr}_${buff}.csv
 		      sleep 1
 		      echo "[INFO] FINISHED"
 		    done
