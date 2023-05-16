@@ -8,7 +8,8 @@ ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
 FLINKROOT='/mnt/eestreaming-refactor/experiment-scripts/flink-simplified/'
 #print(FLINKROOT)
-MAXCORES=32    # num of cores
+MAXCORES=16    # num of cores. 16C32T
+CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[10,26],[11,27],[12,28],[13,29],[14,30],[15,31]]
 
 # the script will run on bootstrap
 bootstrap='192.168.1.153'   # jobmanager
@@ -93,21 +94,22 @@ def runcmd(cmd):
 def resetAllCores():
     # turn on all cores
     for _i in range(MAXCORES):
-        i=str(_i)
-        runcmd('echo 1 > /sys/devices/system/cpu/cpu'+i+'/online')
-        runcmd('ssh ' + victim + ' "echo 1 > /sys/devices/system/cpu/cpu'+i+'/online"')
+        cpus=CPUIDS[_i]
+        for i in cpus:
+            runcmd('ssh ' + victim + ' "echo 1 > /sys/devices/system/cpu/cpu'+ str(i) +'/online"')
     time.sleep(10)
 
 def setCores(nc):
-    # only keep N cores online
-    for _i in range(nc, MAXCORES):
-        i=str(_i)
-        runcmd('echo 0 > /sys/devices/system/cpu/cpu'+i+'/online')
-        runcmd('ssh ' + victim + ' "echo 0 > /sys/devices/system/cpu/cpu'+i+'/online"')
+    # only keep N cores online on victim
+    for _i in range(MAXCORES):
+        if(_i>=nc):
+            cpus=CPUIDS[_i]
+        else:
+            cpus=[CPUIDS[_i][1]]
+        for i in cpus:
+            runcmd('ssh ' + victim + ' "echo 0 > /sys/devices/system/cpu/cpu'+ str(i) +'/online"')
     time.sleep(10)
     catcpustr='for file in /sys/devices/system/cpu/cpu*/online; do echo "$file: $(cat $file)"; done'
-    print(" -------------------- setCores on local --------------------")
-    runcmd(catcpustr)
     print(" -------------------- setCores on victim --------------------")
     runcmd('ssh ' + victim + " '"+catcpustr+"' ")
 
@@ -303,7 +305,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     rest_client.overview()
     ur = upload_jar(jarpath)
     jar_id = ur['filename'].split('/')[-1]
-    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'pmap': 1})
+    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'pmap': 16, 'psrc': 14, 'psink': 2, 'cmpSize': 28, 'blurstep': 2})
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print("deployed job id=", job_id)
