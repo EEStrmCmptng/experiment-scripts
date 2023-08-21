@@ -6,7 +6,7 @@ import datetime
 
 ROOTDIR=os.path.dirname(os.getcwd())
 #FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
-FLINKROOT='~/experiment-scripts/flink-simplified/'
+FLINKROOT='~/experiment-scripts/flink-simplified'
 #print(FLINKROOT)
 MAXCORES=16    # num of cores. 16C32T
 CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[10,26],[11,27],[12,28],[13,29],[14,30],[15,31]]
@@ -14,7 +14,7 @@ CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[1
 # the script will run on bootstrap
 bootstrap='10.10.1.1'   # jobmanager
 victim='10.10.1.2'       # scp logs from victim to bootstrap
-jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
+jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
 
 jmip=bootstrap
 jmpt=8081

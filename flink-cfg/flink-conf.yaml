@@ -30,7 +30,7 @@
 # automatically configure the host name based on the hostname of the node where the
 # JobManager runs.
 
-jobmanager.rpc.address: 192.168.1.153
+jobmanager.rpc.address: 10.10.1.1
 
 # The RPC port where the JobManager is reachable.
 
