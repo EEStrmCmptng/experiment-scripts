@@ -424,7 +424,7 @@ def getTX():
     txbytes = int(retlist[5])
     return txpackets, txbytes
     
-def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
+def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GQUERY
 
     #resetAllCores()
@@ -441,7 +441,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     _flinkdur=int(_flinkdur/1000)
     print("Flink job duration: ", _flinkdur)
 
-    KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_dvfs"+str(DVFS)+"_rapl"+str(RAPL)+'_repeat'+str(NREPEAT)
+    KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_dvfs"+str(DVFS)+'_repeat'+str(NREPEAT)
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
@@ -542,10 +542,6 @@ if __name__ == '__main__':
         print("DVFS = ", args.dvfs)
         DVFS=args.dvfs
         GDVFS=DVFS
-        
-    if args.rapl:
-        print("RAPL = ", args.rapl)
-        RAPL=args.rapl
 
     if args.nrepeat:
         print("NREPEAT = ", args.nrepeat)
@@ -568,11 +564,8 @@ if __name__ == '__main__':
         GQUERY = args.query
 
     try:
-        setITR(ITR)
-        setDVFS(DVFS)
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
-        #runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT)
-        #resetAllCores()
+        runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT)
     except Exception as error:
         print(error)
         traceback.print_exc()
