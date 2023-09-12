@@ -6,10 +6,10 @@ import datetime
 import traceback
 
 dvfs_dict = {
-    "0xc00" :  1.2,
-    "0xd00" :  1.3,
-    "0xe00" :  1.4,
-    "0xf00" :  1.5,
+    "0x0c00" : 1.2,
+    "0x0d00" : 1.3,
+    "0x0e00" : 1.4,
+    "0x0f00" : 1.5,
     "0x1000" : 1.6,
     "0x1100" : 1.7,
     "0x1200" : 1.8,
@@ -43,7 +43,11 @@ jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
 
 jmip=bootstrap
 jmpt=8081
-GLOBAL_ITR=1
+
+# Global vars
+GITR=1
+GDVFS=""
+GQUERY=""
 
 # global sleep state counter
 GPOLL=0
@@ -163,33 +167,32 @@ def setCores(nc):
 # dynamic ITR = 1
 # HOWTO check ITR value: ssh 192.168.1.11 /app/ethtool-4.5/ethtool -c eth0
 def setITR(v):
-    global GLOBAL_ITR
-    
+    global GITR
     print(" -------------------- setITR on victim --------------------")
     print('ssh ' + victim + ' "ethtool -C enp3s0f0 rx-usecs '+v+'"')
     runcmd('ssh ' + victim + ' "ethtool -C enp3s0f0 rx-usecs '+v+'"')
-    time.sleep(0.5)
-    runcmd('ssh ' + victim + ' "ethtool -c enp3s0f0"')
-    
+    time.sleep(1)
+    runcmd('ssh ' + victim + ' "ethtool -c enp3s0f0"')    
     print("")
-
-def setRAPL(v):
-    global GLOBAL_ITR
-    
-    if GLOBAL_ITR != 1:
-        runcmd('ssh ' + victim + ' "/app/uarch-configure/rapl-read/rapl-power-mod ' + v + '"')
-        time.sleep(0.5)
 
 # HOWTO check DVFS policy: ssh 192.168.1.11 /app/perf/display_dvfs_governors.sh
 def setDVFS(s):
-    global GLOBAL_ITR
+    global GDVFS
+
+    if GDVFS == "1":
+        # dynamic DVFS
+        runcmd('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh dynamic"')        
+    else:
+        runcmd('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh static"')
+        v = "0x10000"+s
+        print(" -------------------- setDVFS on victim --------------------")
+        runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
+        time.sleep(0.5)
+        print('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
+        # print CPU frequency across all cores
+        runcmd('ssh ' + victim + ' "rdmsr -a 0x199"')
+        print("")
     
-    v = "0x10000"+s
-    print(" -------------------- setDVFS on victim --------------------")
-    runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
-    time.sleep(0.5)
-    print('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
-        
     '''
     if GLOBAL_ITR != 1:
         # dynamic DVFS = userspace
@@ -206,9 +209,7 @@ def setDVFS(s):
         print('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh ondemand"')
         runcmd('ssh ' + victim + ' "/app/perf/display_dvfs_governors.sh"')
     '''
-    # print CPU frequency across all cores
-    runcmd('ssh ' + victim + ' "rdmsr -a 0x199"')
-    print("")
+    
 
 
 # get ITR logs from victim node
@@ -424,13 +425,12 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB
-    
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GQUERY
+
     #resetAllCores()
     #setCores(NCORES)
     setITR(ITR)
     setDVFS(DVFS)
-    #setRAPL(RAPL)
 
     _flinkrate=FLINKRATE.split('_')
     _flinkdur=0
@@ -441,7 +441,7 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
     _flinkdur=int(_flinkdur/1000)
     print("Flink job duration: ", _flinkdur)
 
-    KWD="cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_dvfs"+str(DVFS)+"_rapl"+str(RAPL)+'_repeat'+str(NREPEAT)
+    KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_dvfs"+str(DVFS)+"_rapl"+str(RAPL)+'_repeat'+str(NREPEAT)
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
@@ -508,7 +508,8 @@ def runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT):
 
     parseFlinkMetricsMod(flinklogdir, loc=KWD, ignore_mins=5)
 
-if __name__ == '__main__':
+if __name__ == '__main__':    
+    
     # python3 runexperiment.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_100000 --cores 16
     parser = argparse.ArgumentParser()
     parser.add_argument("--cores", help="num of cpu cores")
@@ -520,6 +521,7 @@ if __name__ == '__main__':
     parser.add_argument("--flinkrate", help="input rate of Flink query")
     parser.add_argument("--bufftimeout", help="bufferTimeout in Flink")
     parser.add_argument("--runcmd", help="startflink/stopflink")
+    parser.add_argument("--query", help="query to run (i.e. query1, query5, imgproc)", choices=['query1', 'query5', 'imgproc'], required=True)
     args = parser.parse_args()
 
     if args.runcmd:
@@ -534,11 +536,13 @@ if __name__ == '__main__':
     if args.itr:
         print("ITR = ", args.itr)
         ITR=args.itr
+        GITR=int(ITR)
 
     if args.dvfs:
         print("DVFS = ", args.dvfs)
         DVFS=args.dvfs
-
+        GDVFS=DVFS
+        
     if args.rapl:
         print("RAPL = ", args.rapl)
         RAPL=args.rapl
@@ -559,9 +563,15 @@ if __name__ == '__main__':
         print("BUFFTIMEOUT = ", args.bufftimeout)
         BUFFTIMEOUT = args.bufftimeout
 
+    if args.query:
+        print(f"QUERY = {args.query}")        
+        GQUERY = args.query
+
     try:
+        setITR(ITR)
+        setDVFS(DVFS)
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
-        runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT)
+        #runexperiment(NREPEAT, NCORES, ITR, RAPL, DVFS, FLINKRATE, BUFFTIMEOUT)
         #resetAllCores()
     except Exception as error:
         print(error)
