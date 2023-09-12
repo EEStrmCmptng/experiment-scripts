@@ -43,7 +43,7 @@ for fr in $FLINK_RATE; do
 			#ssh ${TBENCH_SERVER1} sudo systemctl restart rapl_log
 			ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
 	
-			python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout ${buff} --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --rapl ${r}
+			python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout ${buff} --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --rapl ${r}
 			sleep 1
 
 			## stop power logging
