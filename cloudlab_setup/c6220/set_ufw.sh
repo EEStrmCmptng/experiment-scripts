@@ -18,8 +18,13 @@ sudo ufw delete allow 8081
 sudo ufw delete allow 6123
 
 # only allow our testing nodes IP to use Flink ports
-sudo ufw allow from 10.10.1.0/24 to any port 8081 proto tcp
-sudo ufw allow from 10.10.1.0/24 to any port 6123 proto tcp
+sudo ufw allow from 10.10.1.1 to any port 8081 proto tcp
+sudo ufw allow from 10.10.1.2 to any port 8081 proto tcp
+sudo ufw allow from 10.10.1.3 to any port 8081 proto tcp
+
+sudo ufw allow from 10.10.1.1 to any port 6123 proto tcp
+sudo ufw allow from 10.10.1.2 to any port 6123 proto tcp
+sudo ufw allow from 10.10.1.3 to any port 6123 proto tcp
  
 # deny everything else
 sudo ufw default allow outgoing
