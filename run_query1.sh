@@ -31,7 +31,7 @@ for fr in $FLINK_RATE; do
 	    for dvfs in ${MDVFS}; do
 	        for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
        		    echo "[INFO] Run Experiment"
-		    echo "[INFO] BEGIN: --itr ${itr} --rapl ${r} --dvfs ${dvfs} --nrepeat ${i}"
+		    echo "[INFO] BEGIN: --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}"
 		    echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout ${buff} --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY}"
 		    #ssh ${TBENCH_SERVER1} sudo systemctl stop rapl_log
 		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
@@ -49,7 +49,7 @@ for fr in $FLINK_RATE; do
 		    #ssh ${TBENCH_SERVER1} sudo systemctl stop rapl_log
 		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
 
-		    loc="./logs/cores${NCORES}_frate${fr}_fbuff${buff}_itr${itr}_dvfs${dvfs}_rapl${r}_repeat${i}"
+		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff${buff}_itr${itr}_dvfs${dvfs}_repeat${i}"
 		    #scp -r ${TBENCH_SERVER1}:/data/rapl_log.log ${loc}/server1_rapl.log
 		    scp -r ${TBENCH_SERVER2}:/data/rapl_log.log ${loc}/server2_rapl.log
 		    
