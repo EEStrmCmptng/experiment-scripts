@@ -48,6 +48,7 @@ jmpt=8081
 GITR=1
 GDVFS=""
 GQUERY=""
+GPOLICY="ondemand"
 
 # global sleep state counter
 GPOLL=0
@@ -177,11 +178,11 @@ def setITR(v):
 
 # HOWTO check DVFS policy: ssh 192.168.1.11 /app/perf/display_dvfs_governors.sh
 def setDVFS(s):
-    global GDVFS
+    global GDVFS, GPOLICY
 
     if GDVFS == "1":
-        # dynamic DVFS
-        runcmd('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh dynamic"')        
+        # ondemand DVFS
+        runcmd("ssh " + victim + " ~/cloudlab/set_dvfs.sh "+GPOLICY)
     else:
         runcmd('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh static"')
         v = "0x10000"+s
@@ -351,7 +352,7 @@ def parseFlinkMetricsMod(flinklogdir, loc="", ignore_mins=5):
         #if('Operator_' in fn):
         if(os.path.isfile(flinklogdir+'/'+fn)):
             print("------------------------------------------------------------------------------------------")
-            kwlist={'numRecordsInPerSecond':[], 'numRecordsOutPerSecond':[], 'busyTimeMsPerSecond':[], 'backPressuredTimeMsPerSecond':[], 'pollCnt':[], 'c1Cnt':[], 'c1eCnt':[], 'c3Cnt':[], 'c6Cnt':[], 'rxBytes':[], 'txBytes':[]}
+            kwlist={'numRecordsInPerSecond':[], 'numRecordsOutPerSecond':[], 'busyTimeMsPerSecond':[], 'backPressuredTimeMsPerSecond':[]}
             ff=open(flinklogdir+'/'+fn, 'r').readlines()
             fcnt=0
             for _ll, _lc in enumerate(ff):
@@ -425,7 +426,7 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GQUERY
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GQUERY, GPOLICY
 
     #resetAllCores()
     #setCores(NCORES)
@@ -441,7 +442,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     _flinkdur=int(_flinkdur/1000)
     print("Flink job duration: ", _flinkdur)
 
-    KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_dvfs"+str(DVFS)+'_repeat'+str(NREPEAT)
+    KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_"+str(GPOLICY)+"dvfs"+str(DVFS)+'_repeat'+str(NREPEAT)
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
@@ -522,6 +523,8 @@ if __name__ == '__main__':
     parser.add_argument("--bufftimeout", help="bufferTimeout in Flink")
     parser.add_argument("--runcmd", help="startflink/stopflink")
     parser.add_argument("--query", help="query to run (i.e. query1, query5, imgproc)", choices=['query1', 'query5', 'imgproc'], required=True)
+    #conservative, ondemand, userspace, powersave, performance, schedutil 
+    parser.add_argument("--policy", help="dvfs policy", choices=['conservative', 'ondemand', 'powersave', 'performance', 'schedutil'])
     args = parser.parse_args()
 
     if args.runcmd:
@@ -562,6 +565,10 @@ if __name__ == '__main__':
     if args.query:
         print(f"QUERY = {args.query}")        
         GQUERY = args.query
+
+    if args.policy:
+        print(f"POLICY = {args.policy}")
+        GPOLICY = args.policy
 
     try:
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
