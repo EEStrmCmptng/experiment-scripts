@@ -1,0 +1,3 @@
+[submodule "cloudlab_setup/c6220/uarch-configure"]
+	path = cloudlab_setup/c6220/uarch-configure
+	url = https://github.com/handong32/uarch-configure.git
