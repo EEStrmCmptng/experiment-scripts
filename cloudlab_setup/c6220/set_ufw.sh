@@ -7,7 +7,7 @@ sudo ufw status
 sudo ufw allow ssh
 
 # allow connections from the following IP
-sudo ufw allow from 141.154.48.0/24
+#sudo ufw allow from 141.154.48.0/24
 sudo ufw allow from 10.10.1.1
 sudo ufw allow from 10.10.1.2
 sudo ufw allow from 10.10.1.3
@@ -39,6 +39,9 @@ sudo ufw allow from 10.10.1.3 to any port 443 proto tcp
 sudo ufw default allow outgoing
 sudo ufw default deny incoming
 
+# enable ufw
+sudo ufw enable
+
 # output should look like bottom
 sudo ufw status
 
@@ -47,7 +50,6 @@ sudo ufw status
 # To                         Action      From
 # --                         ------      ----
 # 22/tcp                     ALLOW       Anywhere                  
-# Anywhere                   ALLOW       141.154.48.0/24           
 # Anywhere                   ALLOW       10.10.1.1                 
 # Anywhere                   ALLOW       10.10.1.2                 
 # Anywhere                   ALLOW       10.10.1.3                 
