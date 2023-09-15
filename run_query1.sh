@@ -14,7 +14,10 @@ export NCORES=${NCORES:=16}
 export TBENCH_SERVER1=${TBENCH_SERVER1:-"10.10.1.1"}
 export TBENCH_SERVER2=${TBENCH_SERVER2:-"10.10.1.2"}
 export MQUERY=${MQUERY:="query1"}
+export MPOLICY=${MPOLICY:="ondemand conservative powersave performance schedutil"}
 
+echo "[INFO] START: ${currdate}"
+echo "[INFO] Input: MPOLICY ${MPOLICY}"
 echo "[INFO] Input: MQUERY ${MQUERY}"
 echo "[INFO] Input: DVFS ${MDVFS}"
 echo "[INFO] Input: ITRS ${ITRS}"
@@ -25,32 +28,49 @@ echo "[INFO] Input: NCORES ${NCORES}"
 echo "[INFO] Input: TBENCH_SERVER1 ${TBENCH_SERVER1}"
 echo "[INFO] Input: TBENCH_SERVER2 ${TBENCH_SERVER2}"
 
-for fr in $FLINK_RATE; do
-    for buff in $BUFF; do
-        for itr in $ITRS; do
-	    for dvfs in ${MDVFS}; do
-	        for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
+function dynamic {
+    for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
+	for fr in $FLINK_RATE; do
+	    for pol in $MPOLICY; do
+		echo "[INFO] Run Experiment"
+		echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}"
+
+		ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log	    
+		ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log		    
+		ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
+		
+		python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}
+		sleep 1
+
+		ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
+ 		loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_repeat${i}"
+ 		scp -r ${TBENCH_SERVER2}:/data/rapl_log.log ${loc}/server2_rapl.log
+		
+ 		echo "[INFO] FINISHED"
+	    done
+	done
+    done
+}
+
+function static {
+    for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
+	for fr in $FLINK_RATE; do
+	    for itr in $ITRS; do
+		for dvfs in ${MDVFS}; do			
        		    echo "[INFO] Run Experiment"
-		    echo "[INFO] BEGIN: --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}"
-		    echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout ${buff} --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY}"
-		    #ssh ${TBENCH_SERVER1} sudo systemctl stop rapl_log
+		    echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY}"
+
 		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
-		    
-		    #ssh ${TBENCH_SERVER1} sudo rm /data/rapl_log.log
 		    ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log
-		    
-		    #ssh ${TBENCH_SERVER1} sudo systemctl restart rapl_log
 		    ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
 		    
-		    python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout ${buff} --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY}
+		    python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy userspace
 		    sleep 1
 
 		    ## stop power logging
-		    #ssh ${TBENCH_SERVER1} sudo systemctl stop rapl_log
 		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
 
-		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff${buff}_itr${itr}_dvfs${dvfs}_repeat${i}"
-		    #scp -r ${TBENCH_SERVER1}:/data/rapl_log.log ${loc}/server1_rapl.log
+		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr${itr}_userspacedvfs${dvfs}_repeat${i}"
 		    scp -r ${TBENCH_SERVER2}:/data/rapl_log.log ${loc}/server2_rapl.log
 		    
 		    echo "[INFO] FINISHED"
@@ -58,4 +78,8 @@ for fr in $FLINK_RATE; do
 	    done
 	done
     done
-done
+}
+
+echo "[INFO] END: ${currdate}"
+
+"$@"

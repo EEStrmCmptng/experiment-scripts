@@ -62,6 +62,8 @@ GRXP=0
 GRXB=0
 GTXP=0
 GTXB=0
+GERXB=0
+GETXB=0
 
 def stopflink():
     print(os.popen("cp -r ./flink-cfg/* "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/conf/").read())
@@ -184,7 +186,7 @@ def setDVFS(s):
         # ondemand DVFS
         runcmd("ssh " + victim + " ~/cloudlab/set_dvfs.sh "+GPOLICY)
     else:
-        runcmd('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh static"')
+        runcmd('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh userspace"')
         v = "0x10000"+s
         print(" -------------------- setDVFS on victim --------------------")
         runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
@@ -223,7 +225,7 @@ def getITRlogs(KWD, cores, itrlogsdir,NREPEAT):
 
 # get Flink logs 
 def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB
     
     tmid=[]
     for tm in rest_client.taskmanagers.all():
@@ -260,7 +262,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
 
-        tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB = getStats()
+        tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXB, tETXB = getStats()
         
         t_poll=str(tPOLL-GPOLL)
         GPOLL = tPOLL
@@ -283,8 +285,14 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         t_txb=str(tTXB-GTXB)
         GTXB = tTXB
 
+        t_erxb=str(tERXB-GERXB)
+        GERXB = tERXB
+
+        t_etxb=str(tETXB-GETXB)
+        GETXB = tETXB
+
         ff=open(flinklogdir+'/../stats.csv', 'a')
-        ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}\n")
+        ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxb}, {t_etxb}\n")
         ff.close()
         
         time.sleep(interval)
@@ -426,7 +434,7 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GQUERY, GPOLICY
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB, GQUERY, GPOLICY
 
     #resetAllCores()
     #setCores(NCORES)
@@ -472,7 +480,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("deployed job id=", job_id)
     time.sleep(30)
 
-    GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
+    GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB = getStats()
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
@@ -524,7 +532,7 @@ if __name__ == '__main__':
     parser.add_argument("--runcmd", help="startflink/stopflink")
     parser.add_argument("--query", help="query to run (i.e. query1, query5, imgproc)", choices=['query1', 'query5', 'imgproc'], required=True)
     #conservative, ondemand, userspace, powersave, performance, schedutil 
-    parser.add_argument("--policy", help="dvfs policy", choices=['conservative', 'ondemand', 'powersave', 'performance', 'schedutil'])
+    parser.add_argument("--policy", help="dvfs policy", choices=['conservative', 'ondemand', 'powersave', 'performance', 'schedutil', 'userspace'])
     args = parser.parse_args()
 
     if args.runcmd:
