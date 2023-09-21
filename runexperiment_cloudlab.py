@@ -62,7 +62,9 @@ GRXP=0
 GRXB=0
 GTXP=0
 GTXB=0
+GERXP=0
 GERXB=0
+GETXP=0
 GETXB=0
 
 def stopflink():
@@ -225,7 +227,7 @@ def getITRlogs(KWD, cores, itrlogsdir,NREPEAT):
 
 # get Flink logs 
 def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB
     
     tmid=[]
     for tm in rest_client.taskmanagers.all():
@@ -258,11 +260,11 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
                     t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
                     #print(vts, vname, vpall, ttm, tid, t_busytime, t_backpressure, t_idletime, t_opsin, t_opsout)
-                                        
+                    
                     ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
 
-        tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXB, tETXB = getStats()
+        tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXP, tERXB, tETXP, tETXB = getStats()
         
         t_poll=str(tPOLL-GPOLL)
         GPOLL = tPOLL
@@ -285,14 +287,18 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         t_txb=str(tTXB-GTXB)
         GTXB = tTXB
 
+        t_erxp=str(tERXP-GERXP)
+        GERXP = tERXP
         t_erxb=str(tERXB-GERXB)
         GERXB = tERXB
 
+        t_etxp=str(tETXP-GETXP)
+        GETXP = tETXP
         t_etxb=str(tETXB-GETXB)
         GETXB = tETXB
 
         ff=open(flinklogdir+'/../stats.csv', 'a')
-        ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxb}, {t_etxb}\n")
+        ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxp}, {t_erxb}, {t_etxp}, {t_etxb}\n")
         ff.close()
         
         time.sleep(interval)
@@ -434,7 +440,7 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB, GQUERY, GPOLICY
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY
 
     #resetAllCores()
     #setCores(NCORES)
@@ -480,7 +486,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("deployed job id=", job_id)
     time.sleep(30)
 
-    GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB = getStats()
+    GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
