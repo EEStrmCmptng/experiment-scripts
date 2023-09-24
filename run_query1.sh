@@ -28,6 +28,33 @@ echo "[INFO] Input: NCORES ${NCORES}"
 echo "[INFO] Input: TBENCH_SERVER1 ${TBENCH_SERVER1}"
 echo "[INFO] Input: TBENCH_SERVER2 ${TBENCH_SERVER2}"
 
+function performance {
+    for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
+	for fr in $FLINK_RATE; do
+	    for itr in $ITRS; do
+		for pol in $MPOLICY; do
+		    echo "[INFO] Run Experiment"
+		    echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr ${itr} --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}"
+
+		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
+		    ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log
+		    ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
+
+		    ssh 10.10.1.1 ethtool -C enp5s0f0 rx-usecs ${itr}
+		    
+		    python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr ${itr} --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}
+
+		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
+ 		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr${itr}_${pol}dvfs1_repeat${i}"
+ 		    scp -r ${TBENCH_SERVER2}:/data/rapl_log.log ${loc}/server2_rapl.log
+		    
+ 		    echo "[INFO] FINISHED"
+		done
+	    done
+	done
+    done
+}
+
 function dynamic {
     for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
 	for fr in $FLINK_RATE; do
@@ -35,12 +62,11 @@ function dynamic {
 		echo "[INFO] Run Experiment"
 		echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}"
 
-		ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log	    
-		ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log		    
+		ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
+		ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log
 		ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
 		
 		python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}
-		sleep 1
 
 		ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
  		loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_repeat${i}"

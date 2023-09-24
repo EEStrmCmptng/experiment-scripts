@@ -5,6 +5,24 @@ import pandas as pd
 import datetime
 import traceback
 
+rdvfs_dict = {
+    2.6 : "1a00",
+    2.5 : "1900",
+    2.4 : "1800",
+    2.3 : "1700",
+    2.2 : "1600",
+    2.1 : "1500",
+    2.0 : "1400",
+    1.9 : "1300",
+    1.8 : "1200",
+    1.7 : "1100",
+    1.6 : "1000",
+    1.5 : "0f00",
+    1.4 : "0e00",
+    1.3 : "0d00",
+    1.2 : "0c00"
+}
+
 dvfs_dict = {
     "0x0c00" : 1.2,
     "0x0d00" : 1.3,
@@ -49,6 +67,8 @@ GITR=1
 GDVFS=""
 GQUERY=""
 GPOLICY="ondemand"
+GDDVFS=2.6
+GFLINKRATE=0
 
 # global sleep state counter
 GPOLL=0
@@ -62,7 +82,9 @@ GRXP=0
 GRXB=0
 GTXP=0
 GTXB=0
+GERXP=0
 GERXB=0
+GETXP=0
 GETXB=0
 
 def stopflink():
@@ -126,7 +148,7 @@ def get_task_metrics_details(jobid, taskid, fieldid):
     response = requests.get(url)
     response.raise_for_status()
     ans=response.json()#[0]['value']
-    return str(ans), ans
+    return(str(ans)), ans
 
 
 def runGetCmd(cmd):
@@ -141,6 +163,12 @@ def runcmd(cmd):
     print(cmd)
     res=os.popen(cmd).read()
     print(res)
+    print('------------------------------------------------------------')
+
+def runcmdQuiet(cmd):
+    print('------------------------------------------------------------')
+    print(cmd)
+    res=os.popen(cmd).read()
     print('------------------------------------------------------------')
 
 
@@ -175,45 +203,22 @@ def setITR(v):
     print('ssh ' + victim + ' "ethtool -C enp3s0f0 rx-usecs '+v+'"')
     runcmd('ssh ' + victim + ' "ethtool -C enp3s0f0 rx-usecs '+v+'"')
     time.sleep(1)
-    runcmd('ssh ' + victim + ' "ethtool -c enp3s0f0"')    
+    runcmd('ssh ' + victim + ' "ethtool -c enp3s0f0"')
     print("")
 
 # HOWTO check DVFS policy: ssh 192.168.1.11 /app/perf/display_dvfs_governors.sh
 def setDVFS(s):
     global GDVFS, GPOLICY
 
-    if GDVFS == "1":
-        # ondemand DVFS
-        runcmd("ssh " + victim + " ~/cloudlab/set_dvfs.sh "+GPOLICY)
-    else:
-        runcmd('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh userspace"')
-        v = "0x10000"+s
-        print(" -------------------- setDVFS on victim --------------------")
-        runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
-        time.sleep(0.5)
-        print('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
-        # print CPU frequency across all cores
-        runcmd('ssh ' + victim + ' "rdmsr -a 0x199"')
-        print("")
-    
-    '''
-    if GLOBAL_ITR != 1:
-        # dynamic DVFS = userspace
-        runcmd('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh userspace"')
-        time.sleep(0.5)
-        
-        runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
-        time.sleep(0.5)
-        print('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
-    else:
-        # dynamic DVFS = ondemand
-        runcmd('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh ondemand"')
-        time.sleep(0.5)
-        print('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh ondemand"')
-        runcmd('ssh ' + victim + ' "/app/perf/display_dvfs_governors.sh"')
-    '''
-    
-
+    runcmdQuiet('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh userspace"')
+    v = "0x10000"+s
+    print(" -------------------- setDVFS on victim --------------------")
+    runcmdQuiet('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
+    time.sleep(0.5)
+    print('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
+    # print CPU frequency across all cores
+    runcmd('ssh ' + victim + ' "rdmsr -a 0x199"')
+    print("")    
 
 # get ITR logs from victim node
 def getITRlogs(KWD, cores, itrlogsdir,NREPEAT):
@@ -225,13 +230,15 @@ def getITRlogs(KWD, cores, itrlogsdir,NREPEAT):
 
 # get Flink logs 
 def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GDVFS, GDDVFS, GFLINKRATE
     
     tmid=[]
     for tm in rest_client.taskmanagers.all():
         tmid.append(tm['id'])
 
     clock=_clock
+    tclock=0
+    phase=1
     print("starting...")
     while(clock>0):
         print("clock", clock, "-------------------------------------------------------------")
@@ -261,11 +268,11 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     #print(vts, vname, vpall, ttm, tid, t_busytime, t_backpressure, t_idletime, t_opsin, t_opsout)
                     if 'Source' in vname:
                         soutlist.append(float(jt_opsout[0]['value']))
-                    
+                        
                     ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
 
-        tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXB, tETXB = getStats()
+        tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXP, tERXB, tETXP, tETXB = getStats()
         
         t_poll=str(tPOLL-GPOLL)
         GPOLL = tPOLL
@@ -288,27 +295,50 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         t_txb=str(tTXB-GTXB)
         GTXB = tTXB
 
+        t_erxp=str(tERXP-GERXP)
+        GERXP = tERXP
         t_erxb=str(tERXB-GERXB)
         GERXB = tERXB
 
+        t_etxp=str(tETXP-GETXP)
+        GETXP = tETXP
         t_etxb=str(tETXB-GETXB)
         GETXB = tETXB
 
         ff=open(flinklogdir+'/../stats.csv', 'a')
-        ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxb}, {t_etxb}\n")
+        ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxp}, {t_erxb}, {t_etxp}, {t_etxb}\n")
         ff.close()
 
-        ## policy
-        sourceout = np.mean(soutlist)
-        # if within 0.1%
-        if (300000.0-sourceout) > 3000.0:
-            # increase dvfs
-        
-        print()
-        
+        sro = np.mean(soutlist)
+        ## dynamic policy activate after 2 mins
+        if tclock >= 120:
+            soutlist=[]
+            if phase == 1:
+                setDVFS(rdvfs_dict[round(GDDVFS, 1)])
+                pdiff = sro / float(GFLINKRATE)
+                print(f"Phase {phase}: DVFS={GDDVFS} SourceNumRecordsOut={sro} GFLINKRATE={GFLINKRATE} PDIFF={pdiff}")
+                phase = 2
+            elif phase == 2:
+                pdiff = sro / float(GFLINKRATE)                
+                #print(f"Phase {phase}: setDVFS({GDDVFS}), SourceNumRecordsOut: {sro}, GFLINKRATE={GFLINKRATE}, PDIFF={pdiff}")
+                if pdiff > 0.999:
+                    GDDVFS-=0.1
+                    setDVFS(rdvfs_dict[round(GDDVFS, 1)])
+                    print(f"Phase {phase}: SourceNumRecordsOut={sro} within 99.9% of GFLINKRATE={GFLINKRATE}, set new DVFS to {GDDVFS}")
+                else:
+                    phase = 3
+                    GDDVFS+=0.1
+                    setDVFS(rdvfs_dict[round(GDDVFS, 1)])
+                    print(f"Phase {phase}: SourceNumRecordsOut={sro} NOT within 99.9% of GFLINKRATE={GFLINKRATE}, set new DVFS to {GDDVFS}")
+            elif phase == 3:
+                print(f"Phase {phase}: SourceNumRecordsOut={sro} DVFS={GDDVFS}")
+                
+        else:
+            print(f"SourceNumRecordsOut: {sro}")
         
         time.sleep(interval)
         clock-=interval
+        tclock+=interval
 
     gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* "+flinklogdir+"/"+victim.replace('.','_')+"/"
     runcmd(gcmd)
@@ -446,12 +476,12 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB, GQUERY, GPOLICY
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY
 
     #resetAllCores()
     #setCores(NCORES)
-    setITR(ITR)
-    setDVFS(DVFS)
+    #setITR(ITR)
+    #setDVFS(DVFS)
 
     _flinkrate=FLINKRATE.split('_')
     _flinkdur=0
@@ -462,7 +492,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     _flinkdur=int(_flinkdur/1000)
     print("Flink job duration: ", _flinkdur)
 
-    KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_"+str(GPOLICY)+"dvfs"+str(DVFS)+'_repeat'+str(NREPEAT)
+    KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_dvfspolicy1'+'_repeat'+str(NREPEAT)
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
@@ -492,7 +522,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("deployed job id=", job_id)
     time.sleep(30)
 
-    GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXB, GETXB = getStats()
+    GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
@@ -575,9 +605,10 @@ if __name__ == '__main__':
         NCORES = int(args.cores)
 
     if args.flinkrate:
-        print("flinkrate = ", args.flinkrate)
         FLINKRATE = args.flinkrate
-
+        GFLINKRATE = int((FLINKRATE.split('_'))[0])
+        print(f"flinkrate = {args.flinkrate}, GFLINKRATE = {GFLINKRATE}")
+                
     if args.bufftimeout:
         print("BUFFTIMEOUT = ", args.bufftimeout)
         BUFFTIMEOUT = args.bufftimeout
@@ -591,8 +622,9 @@ if __name__ == '__main__':
         GPOLICY = args.policy
 
     try:
+        runcmdQuiet('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh ondemand"')
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
-        runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT)
+        runexperiment(NREPEAT, NCORES, 1, 1, FLINKRATE, BUFFTIMEOUT)
     except Exception as error:
         print(error)
         traceback.print_exc()
