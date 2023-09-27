@@ -177,7 +177,7 @@ def setITR(v):
     print('ssh ' + victim + ' "ethtool -C enp3s0f0 rx-usecs '+v+'"')
     runcmd('ssh ' + victim + ' "ethtool -C enp3s0f0 rx-usecs '+v+'"')
     time.sleep(1)
-    runcmd('ssh ' + victim + ' "ethtool -c enp3s0f0"')    
+    runcmd('ssh ' + victim + ' "ethtool -c enp3s0f0"')
     print("")
 
 # HOWTO check DVFS policy: ssh 192.168.1.11 /app/perf/display_dvfs_governors.sh

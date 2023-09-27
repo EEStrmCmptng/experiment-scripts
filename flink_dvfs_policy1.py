@@ -323,11 +323,15 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                 #print(f"Phase {phase}: setDVFS({GDDVFS}), SourceNumRecordsOut: {sro}, GFLINKRATE={GFLINKRATE}, PDIFF={pdiff}")
                 if pdiff > 0.999:
                     GDDVFS-=0.1
+                    if GDDVFS < 1.2:
+                        GDDVFS = 1.2
                     setDVFS(rdvfs_dict[round(GDDVFS, 1)])
                     print(f"Phase {phase}: SourceNumRecordsOut={sro} within 99.9% of GFLINKRATE={GFLINKRATE}, set new DVFS to {GDDVFS}")
                 else:
                     phase = 3
                     GDDVFS+=0.1
+                    if GDDVFS > 2.6:
+                        GDDVFS = 2.6
                     setDVFS(rdvfs_dict[round(GDDVFS, 1)])
                     print(f"Phase {phase}: SourceNumRecordsOut={sro} NOT within 99.9% of GFLINKRATE={GFLINKRATE}, set new DVFS to {GDDVFS}")
             elif phase == 3:
