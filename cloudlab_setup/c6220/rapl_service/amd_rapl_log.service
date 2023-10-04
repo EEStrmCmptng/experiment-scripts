@@ -1,0 +1,9 @@
+[Unit]
+Description=Service to store rapl energy log
+
+[Service]
+WorkingDirectory=/users/hand32/bayop/rapl_service/
+ExecStart=/usr/bin/python amd_rapl_log.py
+
+[Install]
+WantedBy=multi-user.target
