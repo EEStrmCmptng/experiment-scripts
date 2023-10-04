@@ -28,8 +28,21 @@ git clone --recursive git@github.com:EEStrmCmptng/experiment-scripts.git
 ./set_ufw.sh
 
 # set up msr group so that the user can run rdmsr without being sudo
-./msr_setup.sh
 # NOTE: need to log out and log back in for this to take effect
+./msr_setup.sh
 
+# setup RAPL power logging
 
+# first need to create the correct directory
+sudo mkdir /data
+sudo chmod -R 777 /data
+
+# this will build the rapl tools and systemctl
+./rapl_setup.sh
+
+# to test RAPL power logging
+sudo systemctl restart rapl_log
+sudo systemctl status rapl_log
+tail -f /data/rapl_log.txt
+sudo systemctl stop rapl_log
 ```
