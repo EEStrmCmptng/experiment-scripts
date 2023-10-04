@@ -16,5 +16,11 @@
 
 ## Repos to clone on all 3 nodes
 `
-git clone git@github.com:EEStrmCmptng/experiment-scripts.git
+git clone --recursive git@github.com:EEStrmCmptng/experiment-scripts.git
 `
+
+## setup nodes
+```
+# to set up nodes in a clean state
+./setup.sh
+```
