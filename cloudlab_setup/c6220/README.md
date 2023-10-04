@@ -26,4 +26,10 @@ git clone --recursive git@github.com:EEStrmCmptng/experiment-scripts.git
 
 # set up firewall rules
 ./set_ufw.sh
+
+# set up msr group so that the user can run rdmsr without being sudo
+./msr_setup.sh
+# NOTE: need to log out and log back in for this to take effect
+
+
 ```
