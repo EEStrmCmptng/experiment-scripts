@@ -47,10 +47,14 @@ tail -f /data/rapl_log.txt
 sudo systemctl stop rapl_log
 ```
 
-## setup flink
+## setup flink inside experiment-scripts
 ```
+git clone git@github.com:EEStrmCmptng/flink-simplified.git
+cd flink-simplified/scripts
+./makeflink.sh
+
+# clone flink-benchmarks and build it
 cd experiment-scripts
 git clone git@github.com:EEStrmCmptng/flink-benchmarks.git
-git clone git@github.com:EEStrmCmptng/flink-simplified.git
-Then follow the README.md at the main page
+mvn clean package
 ```
