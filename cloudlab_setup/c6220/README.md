@@ -46,3 +46,11 @@ sudo systemctl status rapl_log
 tail -f /data/rapl_log.txt
 sudo systemctl stop rapl_log
 ```
+
+## setup flink
+```
+cd experiment-scripts
+git clone git@github.com:EEStrmCmptng/flink-benchmarks.git
+git clone git@github.com:EEStrmCmptng/flink-simplified.git
+Then follow the README.md at the main page
+```
