@@ -47,7 +47,7 @@ tail -f /data/rapl_log.txt
 sudo systemctl stop rapl_log
 ```
 
-## setup flink inside experiment-scripts
+## setup flink inside experiment-scripts, do this on the JobManager Node
 ```
 git clone git@github.com:EEStrmCmptng/flink-simplified.git
 cd flink-simplified/scripts
