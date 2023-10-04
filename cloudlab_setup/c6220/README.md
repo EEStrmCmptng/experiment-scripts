@@ -23,4 +23,7 @@ git clone --recursive git@github.com:EEStrmCmptng/experiment-scripts.git
 ```
 # to set up nodes in a clean state
 ./setup.sh
+
+# set up firewall rules
+./set_ufw.sh
 ```
