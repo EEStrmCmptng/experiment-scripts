@@ -63,6 +63,10 @@ mvn clean package
 
 # setup flink-cfg to run with 16 mappers, 14 sources, 2 sinks - hardcoded for now
 cd ~/experiment-scripts && cp ./cloudlab_setup/c6220/flink-cfg/* flink-cfg/
+```
 
-
+## Example run commands
+```
+NITERS="0" FLINK_RATE="300000_600000" MPOLICY="ondemand performance powersave" ./run_query1.sh dynamic
+NITERS="2" FLINK_RATE="200000_180000" ITRS="2 4 80" MDVFS="1800 1900" ./run_query1.sh static
 ```
