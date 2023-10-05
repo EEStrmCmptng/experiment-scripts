@@ -57,4 +57,9 @@ cd flink-simplified/scripts
 cd experiment-scripts
 git clone git@github.com:EEStrmCmptng/flink-benchmarks.git
 mvn clean package
+
+# setup flink-cfg
+cd experiment-scripts && cp ./cloudlab_setup/c6220/flink-cfg/* flink-cfg/
+
+
 ```
