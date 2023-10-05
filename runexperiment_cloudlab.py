@@ -186,9 +186,9 @@ def setDVFS(s):
 
     if GDVFS == "1":
         # ondemand DVFS
-        runcmd("ssh " + victim + " ~/cloudlab/set_dvfs.sh "+GPOLICY)
+        runcmd("ssh " + victim + " ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh "+GPOLICY)
     else:
-        runcmd('ssh ' + victim + ' "~/cloudlab/set_dvfs.sh userspace"')
+        runcmd('ssh ' + victim + '" ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh userspace"')
         v = "0x10000"+s
         print(" -------------------- setDVFS on victim --------------------")
         runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
@@ -422,7 +422,7 @@ def getCStates():
     #print(ncores)
 
 def getStats():
-    ret = runGetCmd(f"ssh {victim} ~/cloudlab/getStats.sh")
+    ret = runGetCmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/getStats.sh")
     return [int(x) for x in ret.split(',')]
 
 def getRX():
