@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import datetime
 import traceback
+import subprocess
+from subprocess import Popen, PIPE, call
 
 dvfs_dict = {
     "0x0c00" : 1.2,
@@ -130,6 +132,9 @@ def get_task_metrics_details(jobid, taskid, fieldid):
     ans=response.json()#[0]['value']
     return(str(ans))
 
+def runRemoteCommandGet(com, server):
+    p1 = Popen(["ssh", server, com], stdout=PIPE)
+    return p1.communicate()[0].strip()
 
 def runGetCmd(cmd):
     print('------------------------------------------------------------')
@@ -174,10 +179,11 @@ def setCores(nc):
 def setITR(v):
     global GITR
     print(" -------------------- setITR on victim --------------------")
-    print('ssh ' + victim + ' "ethtool -C enp3s0f0 rx-usecs '+v+'"')
-    runcmd('ssh ' + victim + ' "ethtool -C enp3s0f0 rx-usecs '+v+'"')
+    ieth = runRemoteCommandGet("ifconfig | grep -B1 10.10.1 | grep -o '^\w*'", victim).decode()
+    print(f"ssh {victim} ethtool -C {ieth} rx-usecs {v}")
+    runcmd(f"ssh {victim} ethtool -C {ieth} rx-usecs {v}")
     time.sleep(1)
-    runcmd('ssh ' + victim + ' "ethtool -c enp3s0f0"')
+    runcmd(f"ssh {victim} ethtool -c {ieth}")
     print("")
 
 # HOWTO check DVFS policy: ssh 192.168.1.11 /app/perf/display_dvfs_governors.sh
@@ -185,10 +191,10 @@ def setDVFS(s):
     global GDVFS, GPOLICY
 
     if GDVFS == "1":
-        # ondemand DVFS
-        runcmd("ssh " + victim + " ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh "+GPOLICY)
+        # existing policies
+        runcmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh {GPOLICY}")
     else:
-        runcmd('ssh ' + victim + '" ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh userspace"')
+        runcmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh userspace")
         v = "0x10000"+s
         print(" -------------------- setDVFS on victim --------------------")
         runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
