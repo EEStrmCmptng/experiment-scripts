@@ -44,6 +44,7 @@ sudo ufw enable
 
 # output should look like bottom
 sudo ufw status
+sudo ufw logging off
 
 # Status: active
 
