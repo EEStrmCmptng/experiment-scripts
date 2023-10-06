@@ -14,6 +14,7 @@ sudo modprobe msr
 # lets run without sudo
 sudo setcap cap_sys_rawio=ep /usr/sbin/rdmsr 
 sudo setcap cap_sys_rawio=ep /usr/sbin/wrmsr
+sudo setcap cap_net_admin+ep /usr/sbin/ethtool
 
 # flink related
 pip install numpy pandas flink-rest-client
