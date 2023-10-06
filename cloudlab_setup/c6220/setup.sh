@@ -24,3 +24,6 @@ sudo killall irqbalance
 # set irq affinity - make sure receive/transmit queues are mapped to the same core
 ieth=$(ifconfig | grep -B1 10.10.1 | grep -o "^\w*")
 sudo ./intel_set_irq_affinity.sh -x all ${ieth}
+
+# this is causing firmware issues, disable for now
+sudo rmmod mlx4_ib
