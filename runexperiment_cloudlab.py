@@ -51,6 +51,7 @@ GITR=1
 GDVFS=""
 GQUERY=""
 GPOLICY="ondemand"
+GRERUNFLINK=False
 
 # global sleep state counter
 GPOLL=0
@@ -429,7 +430,13 @@ def getCStates():
 
 def getStats():
     ret = runGetCmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/getStats.sh")
-    return [int(x) for x in ret.split(',')]
+    llx = []
+    for x in ret.split(','):
+        if x == '' or x == ' ' or x == '\n':
+            llx.append(0)
+        else:
+            llx.append(int(x))
+    return llx
 
 def getRX():
     ret = runGetCmd(f"ssh {victim} ifconfig | grep -A5 10.10.1 | grep 'RX packets' | grep '\w*'")
@@ -446,7 +453,7 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK
 
     #resetAllCores()
     #setCores(NCORES)
@@ -473,8 +480,9 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     runcmd('mkdir '+flinklogdir+'/'+victim.replace('.','_'))
     
     # run a flink job
-    stopflink()
-    startflink()
+    if GRERUNFLINK == True:
+        stopflink()
+        startflink()
     with open("time.txt", "a") as f:
         ct = datetime.datetime.now()
         print("Time flink started:",ct,file=f)
@@ -512,8 +520,9 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     #    subt = [e2 - e1 for (e1, e2) in zip(stateslist1, stateslist2)]
     #    print(f"POLL, C1, C1E, C3, C6", file=f)
     #    print(f"{subt}", file=f)
-        
-    stopflink()
+
+    if GRERUNFLINK == True:
+        stopflink()
     with open("time.txt","a") as f:
         ct2 = datetime.datetime.now()
         print("Time flink stopped:",ct2, file=f)
