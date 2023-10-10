@@ -63,6 +63,7 @@ cd flink-simplified/scripts
 # clone flink-benchmarks and build it
 cd ~/experiment-scripts
 git clone git@github.com:EEStrmCmptng/flink-benchmarks.git
+cd flink-benchmarks
 mvn clean package
 
 # setup flink-cfg to run with 16 mappers, 14 sources, 2 sinks - hardcoded for now
