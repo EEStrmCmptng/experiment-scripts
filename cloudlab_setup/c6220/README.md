@@ -49,7 +49,7 @@ sudo chmod -R 777 /data
 # to test RAPL power logging
 sudo systemctl restart rapl_log
 sudo systemctl status rapl_log
-tail -f /data/rapl_log.txt
+tail -f /data/rapl_log.log
 sudo systemctl stop rapl_log
 ```
 
