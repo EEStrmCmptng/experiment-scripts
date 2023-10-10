@@ -41,6 +41,8 @@ sudo setcap cap_net_admin+ep /usr/sbin/ethtool
 sudo mkdir /data
 sudo chmod -R 777 /data
 
+# Open rapl_service/rapl_log.service and change path to your user
+
 # this will build the rapl tools and systemctl
 ./rapl_setup.sh
 
