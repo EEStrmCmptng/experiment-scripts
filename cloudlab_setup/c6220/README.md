@@ -2,10 +2,12 @@
 
 ## Assume 3 nodes with IP addresses 10.10.1.1, 10.10.1.2, 10.10.1.3
 ```
+
 10.10.1.1 -> Source/Sink
 10.10.1.2 -> Mapper
 10.10.1.3 -> JobManager
 ```
+![Screenshot from 2023-10-10 09-38-30](https://github.com/EEStrmCmptng/experiment-scripts/assets/23284162/60dc741d-0a04-4b32-8b50-5de74d7febaf)
 
 ## Update hostname on all 3 nodes
 ```
