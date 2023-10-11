@@ -225,11 +225,15 @@ def setDVFS(s):
 
 
 # get ITR logs from victim node
-def getITRlogs(KWD, cores, itrlogsdir,NREPEAT):
+def cleanITRlogs():
+    runGetCmd(f"ssh {victim} cat /proc/ixgbe_stats/core/*")
+    print("cleanITRlogs....")
+    
+def getITRlogs(KWD, cores, itrlogsdir, NREPEAT):
     for i in range(cores):
-        gcmd="cat /proc/ixgbe_stats/core/"+str(i)+" &> /app/flink_dmesg."+str(i)+"_"+str(NREPEAT)
+        gcmd="cat /proc/ixgbe_stats/core/"+str(i)+" &> ~/flink_dmesg."+str(i)+"_"+str(NREPEAT)
         runcmd('ssh ' + victim + ' "' + gcmd + '"')
-        gcmd="scp -r "+victim+":/app/flink_dmesg."+str(i)+"_"+str(NREPEAT)+" "+itrlogsdir+"linux.flink.dmesg."+"_"+str(i)+"_"+str(NREPEAT)
+        gcmd="scp -r "+victim+":~/flink_dmesg."+str(i)+"_"+str(NREPEAT)+" "+itrlogsdir+"linux.flink.dmesg."+"_"+str(i)+"_"+str(NREPEAT)
         runcmd(gcmd)
 
 # get Flink logs 
@@ -501,10 +505,11 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     time.sleep(30)
 
     GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
+    cleanITRlogs()
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
-    #getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
+    getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
         
     ## get ifconfig RX, TX Bytes
     #rxpackets2, rxbytes2 = getRX()

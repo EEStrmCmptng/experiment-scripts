@@ -8,7 +8,9 @@ import pandas as pd
 
 LINUX_COLS = ['i', 'rx_desc', 'rx_bytes', 'tx_desc', 'tx_bytes', 'instructions', 'cycles', 'ref_cycles', 'llc_miss', 'c0', 'c1', 'c1e', 'c3', 'c6', 'c7', 'joules', 'timestamp']
 
-TIME_CONVERSION_khz = 1./(2899999*1000)
+#2600000
+#TIME_CONVERSION_khz = 1./(2899999*1000
+TIME_CONVERSION_khz = 1./(2600000*1000)
 JOULE_CONVERSION = 0.00001526
 
 loc = sys.argv[1]
