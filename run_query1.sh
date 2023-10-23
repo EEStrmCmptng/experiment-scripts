@@ -11,10 +11,13 @@ export ITRS=${ITRS:="1"}
 export FLINK_RATE=${FLINK_RATE:="200000_600000"}
 export BUFF=${BUFF:="-1"}
 export NCORES=${NCORES:=16}
-export TBENCH_SERVER1=${TBENCH_SERVER1:-"10.10.1.1"}
-export TBENCH_SERVER2=${TBENCH_SERVER2:-"10.10.1.2"}
+export IPSINK=${IPSINK:="10.10.1.4"}
+export IPMAPPER=${IPMAPPER:="10.10.1.3"}
+export IPSOURCE=${IPSOURCE:="10.10.1.2"}
 export MQUERY=${MQUERY:="query1"}
-export MPOLICY=${MPOLICY:="ondemand conservative powersave performance schedutil"}
+export MPOLICY=${MPOLICY:="ondemand"}
+#export MPOLICY=${MPOLICY:="ondemand conservative powersave performance schedutil"}
+export MCFG=${MCFG:="14;16;2"}
 
 echo "[INFO] START: ${currdate}"
 echo "[INFO] Input: MPOLICY ${MPOLICY}"
@@ -25,8 +28,7 @@ echo "[INFO] Input: NITERS ${NITERS}"
 echo "[INFO] Input: FLINK_RATE ${FLINK_RATE}"
 echo "[INFO] Input: BUFF ${BUFF}"
 echo "[INFO] Input: NCORES ${NCORES}"
-echo "[INFO] Input: TBENCH_SERVER1 ${TBENCH_SERVER1}"
-echo "[INFO] Input: TBENCH_SERVER2 ${TBENCH_SERVER2}"
+echo "[INFO] Input: IPMAPPER ${IPMAPPER}"
 
 function dvfspolicy {
     for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
@@ -34,15 +36,15 @@ function dvfspolicy {
 	    echo "[INFO] Run Experiment"
 	    echo "[INFO] python3 -u flink_dvfs_policy1.py --flinkrate ${fr} --bufftimeout -1 --nrepeat ${i} --cores 16 --query query1"
 
-	    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
-	    ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log
-	    ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
+	    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+	    ssh ${IPMAPPER} sudo rm /data/rapl_log.log
+	    ssh ${IPMAPPER} sudo systemctl restart rapl_log
 
 	    python3 -u flink_dvfs_policy1.py --flinkrate ${fr} --bufftimeout -1 --nrepeat ${i} --cores 16 --query query1
 
-	    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
+	    ssh ${IPMAPPER} sudo systemctl stop rapl_log
  	    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_dvfspolicy1_repeat${i}"
- 	    scp -r ${TBENCH_SERVER2}:/data/rapl_log.log ${loc}/server2_rapl.log
+ 	    scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
 	    
  	    echo "[INFO] FINISHED"
 	done
@@ -56,17 +58,17 @@ function performance {
 		for pol in $MPOLICY; do
 		    echo "[INFO] Run Experiment"
 		    echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr ${itr} --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}"
-		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
-		    ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log
-		    ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+		    ssh ${IPMAPPER} sudo rm /data/rapl_log.log
+		    ssh ${IPMAPPER} sudo systemctl restart rapl_log
 		    
 		    #ssh 10.10.1.1 ethtool -C enp5s0f0 rx-usecs ${itr}
 		    
 		    python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr ${itr} --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}
 
-		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
  		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr${itr}_${pol}dvfs1_repeat${i}"
- 		    scp -r ${TBENCH_SERVER2}:/data/rapl_log.log ${loc}/server2_rapl.log
+ 		    scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
 		    
  		    echo "[INFO] FINISHED"
 		done
@@ -76,23 +78,44 @@ function performance {
 }
 
 function dynamic {
-    for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
-	for fr in $FLINK_RATE; do
-	    for pol in $MPOLICY; do
-		echo "[INFO] Run Experiment"
-		echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}"
+    for cfg in $MCFG; do
+	echo $cfg
+	nsrc=$(echo $cfg | cut -d ";" -f 1)
+	nmapper=$(echo $cfg | cut -d ";" -f 2)
+	nsink=$(echo $cfg | cut -d ";" -f 3)
+	
+	rm flink-cfg/schedulercfg
+	for t in `seq 1 1 $nsrc`; do
+	    echo "Source; ${IPSOURCE}" >> flink-cfg/schedulercfg
+	done
+	for t in `seq 1 1 $nmapper`; do
+	    echo "Mapper; ${IPMAPPER}" >> flink-cfg/schedulercfg
+	done
+	for t in `seq 1 1 $nsink`; do
+	    echo "Sink; ${IPSINK}" >> flink-cfg/schedulercfg
+	done
 
-		ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
-		ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log
-		ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
-		
-		python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy ${pol}
-
-		ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
- 		loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_repeat${i}"
- 		scp -r ${TBENCH_SERVER2}:/data/rapl_log.log ${loc}/server2_rapl.log
-		
- 		echo "[INFO] FINISHED"
+	#echo "[INFO] python runexperiment_cloudlab.py --query query1 --runcmd startflink"
+	#python runexperiment_cloudlab.py --query query1 --runcmd startflink
+	
+	for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
+	    for fr in $FLINK_RATE; do
+		for pol in $MPOLICY; do
+		    echo "[INFO] Run Experiment"
+		    echo "[INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}"
+			
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+		    ssh ${IPMAPPER} sudo rm /data/rapl_log.log
+		    ssh ${IPMAPPER} sudo systemctl restart rapl_log
+		    
+		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+		    
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+ 		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+ 		    scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
+		    
+ 		    echo "[INFO] FINISHED"
+		done
 	    done
 	done
     done
@@ -106,18 +129,18 @@ function static {
        		    echo "[INFO] Run Experiment"
 		    echo "[INFO] python3 runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY}"
 
-		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
-		    ssh ${TBENCH_SERVER2} sudo rm /data/rapl_log.log
-		    ssh ${TBENCH_SERVER2} sudo systemctl restart rapl_log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+		    ssh ${IPMAPPER} sudo rm /data/rapl_log.log
+		    ssh ${IPMAPPER} sudo systemctl restart rapl_log
 		    
 		    python3 -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr ${itr} --dvfs ${dvfs} --nrepeat ${i}  --cores ${NCORES} --query ${MQUERY} --policy userspace
 		    sleep 1
 
 		    ## stop power logging
-		    ssh ${TBENCH_SERVER2} sudo systemctl stop rapl_log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
 
 		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr${itr}_userspacedvfs${dvfs}_repeat${i}"
-		    scp -r ${TBENCH_SERVER2}:/data/rapl_log.log ${loc}/server2_rapl.log
+		    scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
 		    
 		    echo "[INFO] FINISHED"
 		done

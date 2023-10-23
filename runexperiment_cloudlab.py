@@ -37,8 +37,8 @@ MAXCORES=16    # num of cores. 16C32T
 CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[10,26],[11,27],[12,28],[13,29],[14,30],[15,31]]
 
 # the script will run on bootstrap
-bootstrap='10.10.1.3'   # jobmanager
-victim='10.10.1.2'       # scp logs from victim to bootstrap
+bootstrap='10.10.1.1'   # jobmanager
+victim='10.10.1.3'       # scp logs from victim to bootstrap
 jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Query5-jar-with-dependencies.jar'
@@ -52,6 +52,9 @@ GDVFS=""
 GQUERY=""
 GPOLICY="ondemand"
 GRERUNFLINK=False
+GSOURCE=14
+GMAPPER=16
+GSINK=2
 
 # global sleep state counter
 GPOLL=0
@@ -221,8 +224,6 @@ def setDVFS(s):
         print('ssh ' + victim + ' "/app/perf/set_dvfs_governor.sh ondemand"')
         runcmd('ssh ' + victim + ' "/app/perf/display_dvfs_governors.sh"')
     '''
-    
-
 
 # get ITR logs from victim node
 def cleanITRlogs():
@@ -457,8 +458,8 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK
-
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER
+    
     #resetAllCores()
     #setCores(NCORES)
     setITR(ITR)
@@ -473,7 +474,8 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     _flinkdur=int(_flinkdur/1000)
     print("Flink job duration: ", _flinkdur)
 
-    KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_"+str(GPOLICY)+"dvfs"+str(DVFS)+'_repeat'+str(NREPEAT)
+    KWD=f"{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_mapper{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
+    #KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_"+str(GPOLICY)+"dvfs"+str(DVFS)+'_repeat'+str(NREPEAT)
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
@@ -498,18 +500,18 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     rest_client.overview()
     ur = upload_jar(jarpath)
     jar_id = ur['filename'].split('/')[-1]
-    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': 16, 'p-source': 14, 'p-sink': 2, 'cmpSize': 28, 'blurstep': 2})
+    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'cmpSize': 28, 'blurstep': 2})
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print("deployed job id=", job_id)
     time.sleep(30)
 
     GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
-    cleanITRlogs()
+    #cleanITRlogs()
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
-    getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
+    #getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
         
     ## get ifconfig RX, TX Bytes
     #rxpackets2, rxbytes2 = getRX()
@@ -544,8 +546,6 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     parseFlinkMetricsMod(flinklogdir, loc=KWD, ignore_mins=5)
 
 if __name__ == '__main__':    
-    
-    # python3 runexperiment.py --rapl 50 --itr 10 --dvfs 0xfff --nrepeat 1 --flinkrate 100_100000 --cores 16
     parser = argparse.ArgumentParser()
     parser.add_argument("--cores", help="num of cpu cores")
     parser.add_argument("--rapl", help="Rapl power limit [35, 135]")
@@ -556,8 +556,11 @@ if __name__ == '__main__':
     parser.add_argument("--flinkrate", help="input rate of Flink query")
     parser.add_argument("--bufftimeout", help="bufferTimeout in Flink")
     parser.add_argument("--runcmd", help="startflink/stopflink")
+    parser.add_argument("--nsource", help="num of source")
+    parser.add_argument("--nsink", help="num of sink")
+    parser.add_argument("--nmapper", help="num of mapper")
     parser.add_argument("--query", help="query to run (i.e. query1, query5, imgproc)", choices=['query1', 'query5', 'imgproc'], required=True)
-    #conservative, ondemand, userspace, powersave, performance, schedutil 
+    #conservative, ondemand, userspace, powersave, performance, schedutil
     parser.add_argument("--policy", help="dvfs policy", choices=['conservative', 'ondemand', 'powersave', 'performance', 'schedutil', 'userspace'])
     args = parser.parse_args()
 
@@ -604,6 +607,16 @@ if __name__ == '__main__':
         print(f"POLICY = {args.policy}")
         GPOLICY = args.policy
 
+    if args.nsource:
+        print(f"Source = {args.nsource}")
+        GSOURCE = int(args.nsource)
+    if args.nsink:
+        print(f"Sink = {args.nsink}")
+        GSINK = int(args.nsink)
+    if args.nmapper:
+        print(f"Mapper = {args.nmapper}")
+        GMAPPER = int(args.nmapper)
+        
     try:
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
         runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT)
