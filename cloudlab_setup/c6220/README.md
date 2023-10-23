@@ -75,3 +75,10 @@ cd ~/experiment-scripts && cp ./cloudlab_setup/c6220/flink-cfg/* flink-cfg/
 NITERS="0" FLINK_RATE="300000_600000" MPOLICY="ondemand performance powersave" ./run_query1.sh dynamic
 NITERS="2" FLINK_RATE="200000_180000" ITRS="2 4 80" MDVFS="1800 1900" ./run_query1.sh static
 ```
+
+## How to view Web UI
+```
+ssh -L 8082:localhost:8081 user....@cloudlabnode... -N
+
+Open browser: localhost:8082
+```
