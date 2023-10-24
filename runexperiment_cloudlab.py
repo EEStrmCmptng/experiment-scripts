@@ -507,11 +507,11 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     time.sleep(30)
 
     GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
-    #cleanITRlogs()
+    cleanITRlogs()
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
-    #getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
+    getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
         
     ## get ifconfig RX, TX Bytes
     #rxpackets2, rxbytes2 = getRX()
