@@ -17,7 +17,7 @@ export IPSOURCE=${IPSOURCE:="10.10.1.2"}
 export MQUERY=${MQUERY:="query1"}
 export MPOLICY=${MPOLICY:="ondemand"}
 #export MPOLICY=${MPOLICY:="ondemand conservative powersave performance schedutil"}
-export MCFG=${MCFG:="16;16;4"}
+export MCFG=${MCFG:="16;16;16"}
 
 echo "[INFO] START: ${currdate}"
 echo "[INFO] Input: MPOLICY ${MPOLICY}"
@@ -168,7 +168,9 @@ function static {
 
 			#loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr${itr}_userspacedvfs${dvfs}_repeat${i}"
 			#scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
-			
+
+			scp -r ./logs/* don:/home/handong/flink/11_3_2023_5.15.89_itrlog/
+			rm -rf ./logs/*
 			echo "[INFO] FINISHED"
 		    done
 		done
