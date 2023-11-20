@@ -15,10 +15,18 @@ sudo ufw allow from 10.10.1.4
 sudo ufw allow from 10.10.1.5
 
 # clear current ports just in case
+sudo ufw delete allow 11211
 sudo ufw delete allow 8081
 sudo ufw delete allow 6123
 sudo ufw delete allow 80
 sudo ufw delete allow 443
+
+# mcd port
+sudo ufw allow from 10.10.1.1 to any port 11211 proto tcp
+sudo ufw allow from 10.10.1.2 to any port 11211 proto tcp
+sudo ufw allow from 10.10.1.3 to any port 11211 proto tcp
+sudo ufw allow from 10.10.1.4 to any port 11211 proto tcp
+sudo ufw allow from 10.10.1.5 to any port 11211 proto tcp
 
 # only allow our testing nodes IP to use Flink ports
 sudo ufw allow from 10.10.1.1 to any port 8081 proto tcp
