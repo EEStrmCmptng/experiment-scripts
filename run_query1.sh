@@ -16,8 +16,8 @@ export IPMAPPER=${IPMAPPER:="10.10.1.3"}
 export IPSOURCE=${IPSOURCE:="10.10.1.2"}
 export MQUERY=${MQUERY:="query1"}
 export MPOLICY=${MPOLICY:="ondemand"}
-#export MPOLICY=${MPOLICY:="ondemand conservative powersave performance schedutil"}
-export MCFG=${MCFG:="16;16;16"}
+#export MPOLICY=${MPOLICY:="conservative powersave performance schedutil"}
+export MCFG=${MCFG:="16;16;4"}
 
 echo "[INFO] START: ${currdate}"
 echo "[INFO] Input: MPOLICY ${MPOLICY}"
@@ -78,13 +78,20 @@ function performance {
     done
 }
 
+function cleanLogs {
+    rm -rf /users/hand32/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+    ssh ${IPSOURCE} rm -rf /users/hand32/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+    ssh ${IPMAPPER} rm -rf /users/hand32/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+    ssh ${IPSINK} rm -rf /users/hand32/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+}
+
 function dynamic {
     for cfg in $MCFG; do
 	echo $cfg
 	nsrc=$(echo $cfg | cut -d ";" -f 1)
 	nmapper=$(echo $cfg | cut -d ";" -f 2)
 	nsink=$(echo $cfg | cut -d ";" -f 3)
-
+	
 	echo "[INFO] python runexperiment_cloudlab.py --query query1 --runcmd stopflink"
 	python runexperiment_cloudlab.py --query query1 --runcmd stopflink
 	
@@ -107,7 +114,9 @@ function dynamic {
 		for pol in $MPOLICY; do
 		    echo "[INFO] Run Experiment"
 		    echo "[INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}"
-			
+
+		    #cleanLogs
+		    
 		    #ssh ${IPMAPPER} sudo systemctl stop rapl_log
 		    #ssh ${IPMAPPER} sudo rm /data/rapl_log.log
 		    #ssh ${IPMAPPER} sudo systemctl restart rapl_log

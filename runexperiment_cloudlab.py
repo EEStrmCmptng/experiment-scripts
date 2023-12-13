@@ -39,7 +39,8 @@ CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[1
 # the script will run on bootstrap
 bootstrap='10.10.1.1'   # jobmanager
 victim='10.10.1.3'       # scp logs from victim to bootstrap
-jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
+#jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
+jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Query5-jar-with-dependencies.jar'
 
@@ -54,7 +55,7 @@ GPOLICY="ondemand"
 GRERUNFLINK=False
 GSOURCE=14
 GMAPPER=16
-GSINK=2
+GSINK=16
 
 # global sleep state counter
 GPOLL=0
@@ -462,6 +463,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     
     #resetAllCores()
     #setCores(NCORES)
+
     setITR(ITR)
     setDVFS(DVFS)
 
@@ -543,7 +545,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print('latency in flink log: ', latency_list)
     print('average latency in flink log', latency_avg)
 
-    parseFlinkMetricsMod(flinklogdir, loc=KWD, ignore_mins=5)
+    parseFlinkMetricsMod(flinklogdir, loc=KWD, ignore_mins=2)
 
 if __name__ == '__main__':    
     parser = argparse.ArgumentParser()
@@ -559,7 +561,7 @@ if __name__ == '__main__':
     parser.add_argument("--nsource", help="num of source")
     parser.add_argument("--nsink", help="num of sink")
     parser.add_argument("--nmapper", help="num of mapper")
-    parser.add_argument("--query", help="query to run (i.e. query1, query5, imgproc)", choices=['query1', 'query5', 'imgproc'], required=True)
+    parser.add_argument("--query", help="query to run (i.e. query1, query5, imgproc)", required=True)
     #conservative, ondemand, userspace, powersave, performance, schedutil
     parser.add_argument("--policy", help="dvfs policy", choices=['conservative', 'ondemand', 'powersave', 'performance', 'schedutil', 'userspace'])
     args = parser.parse_args()
