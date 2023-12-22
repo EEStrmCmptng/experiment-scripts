@@ -1,0 +1,42 @@
+#!/bin/bash
+#set -x
+
+busytimefieldnum=6
+outputrecordspersecond=10
+function busytimeparse()
+{
+   while read a b c v e; do v=${v%\'*}; v=${v#*\'}; echo $v ;done
+}   
+function outrecparse()
+{
+    while read a b c v e; do v=${v%\'*}; v=${v#*\'}; echo $v ;done
+}
+
+fieldnum=$outputrecordspersecond
+parsefunc=outrecparse
+
+dsdir=~/experiment-scripts/logs
+query=query1
+cores=cores16
+rate=100000
+itr=1
+duration=3600000
+flinkbuffer=fbuff-1
+dvfs=ondemanddvfs1
+sources=source16
+mappers=mapper4
+sinks=sink16
+run=repeat0
+
+operator=Source
+operatorinstance='0'
+flinkdatadir=${dsdir}/${query}_${cores}_frate${rate}_${duration}_${flinkbuffer}_itr${itr}_${dvfs}_${sources}_${mappers}_${sinks}_${run}/Flinklogs
+
+datafiles=${flinkdatadir}/Operator_${operator}:*_${operatorinstance}
+
+echo $datafiles
+
+#tail -f $datafiles -s0
+tail -f  $datafiles
+#tail -f -s0  $datafiles |  cut -d';' -f $fieldnum | $parsefunc
+#cat $datafiles 

@@ -17,7 +17,7 @@ export IPSOURCE=${IPSOURCE:="10.10.1.2"}
 export MQUERY=${MQUERY:="query1"}
 export MPOLICY=${MPOLICY:="ondemand"}
 #export MPOLICY=${MPOLICY:="conservative powersave performance schedutil"}
-export MCFG=${MCFG:="16;16;4"}
+export MCFG=${MCFG:="16;4;16"}
 
 echo "[INFO] START: ${currdate}"
 echo "[INFO] Input: MPOLICY ${MPOLICY}"
