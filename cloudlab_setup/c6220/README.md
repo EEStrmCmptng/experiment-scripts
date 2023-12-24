@@ -82,3 +82,8 @@ ssh -L 8082:localhost:8081 user....@cloudlabnode... -N
 
 Open browser: localhost:8082
 ```
+
+## visualizing using livegraph
+```
+ssh user@apt033.apt.emulab.net ./otime | ./livegraph | gnuplot -noraise -geometry 500x100
+```

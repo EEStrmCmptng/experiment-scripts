@@ -1,0 +1,54 @@
+#!/bin/bash
+#set -x
+delay=${SWEEP_DELAY:-50}
+start=${SWEEP_START:-1}
+max=${SWEEp_MAX:-$(nproc)}
+
+jvmpid=$1
+
+if [[ -z $jvmpid ]]; then
+    echo "you did not pass the pid of the java process  guessing using pidof java"
+    jvmpid=$(pidof java)
+    if [[ -z $jvmpid ]]; then
+	echo "ERROR: could not file a java process" > /dev/stderr
+	exit -1
+    fi
+    echo "my guess is $jvmpid"
+fi
+
+echo "$jvmpid info"
+ps ww -p $jvmpid
+echo "$jvmpid threads"
+ps -p $jvmpid -T
+
+# thread change logic is broken will debug when
+# we have time together.
+
+threads=( /proc/$jvmpid/task/*  )
+threads=( ${threads[@]##*/} )
+
+echo "${#threads[@]} threads: ${threads[@]}"
+
+for ((j=0; j<10; j++)); do
+    for ((i=start; i<max; i++));  do
+	curthreads=( ls -1/proc/$jvmpid/task/* )
+	curthreads=( ${threads[@]##*/} )
+	if [[ "${curthreads[@]}" != "${threads[@]}" ]]; then
+	    echo "$jvmpid: change in threads : ${#threads[@]} -> ${#curthreads[@]}"
+	    echo "${threads[@]} -> ${curthreads[@]}"
+	    OFS=$IFS; IFS=$'\n'
+	    diff  <(echo "${threads[@]}" ) <(echo "${curthreads[@]}")
+	    IFS=$OFS
+	    threads=( ${curthreads[@]} )
+	fi
+	mask=$(( (1<<i)-1 ))
+	mask=$(printf "0x%x\n" $mask);
+	echo "setting affinity of all ${jvmpid} to $mask"
+	#    echo "taskset -a -p ${mask} $jvmpid > /dev/null"
+	taskset -a -p ${mask} $jvmpid > /dev/null
+	#   echo "taskset -p $jvmpid"
+	taskset -p $jvmpid
+	#    echo sleep $delay
+	sleep $delay
+    done
+done
