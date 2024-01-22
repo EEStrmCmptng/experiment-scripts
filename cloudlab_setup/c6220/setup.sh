@@ -24,7 +24,7 @@ sudo setcap cap_sys_rawio=ep /usr/sbin/wrmsr
 sudo setcap cap_net_admin+ep /usr/sbin/ethtool
 
 # flink related python libraries
-pip install numpy pandas flink-rest-client
+pip install -r requirements.txt
 
 # disable irq rebalance
 sudo killall irqbalance
