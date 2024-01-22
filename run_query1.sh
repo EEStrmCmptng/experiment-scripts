@@ -8,16 +8,15 @@ export NITERS=${NITERS:="0"}
 #export MDVFS=${MDVFS:="0c00 0d00 0e00 0f00 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 1a00"}
 export MDVFS=${MDVFS:="1"}
 export ITRS=${ITRS:="1"}
-export FLINK_RATE=${FLINK_RATE:="200000_600000"}
+export FLINK_RATE=${FLINK_RATE:="200000_600000"} # 200K records per second for 1 hour
 export BUFF=${BUFF:="-1"}
 export NCORES=${NCORES:=16}
 export IPSINK=${IPSINK:="10.10.1.4"}
 export IPMAPPER=${IPMAPPER:="10.10.1.3"}
 export IPSOURCE=${IPSOURCE:="10.10.1.2"}
 export MQUERY=${MQUERY:="query1"}
-export MPOLICY=${MPOLICY:="ondemand"}
-#export MPOLICY=${MPOLICY:="conservative powersave performance schedutil"}
-export MCFG=${MCFG:="16;4;16"}
+export MPOLICY=${MPOLICY:="ondemand"} # Other policies: conservative powersave performance schedutil"
+export MCFG=${MCFG:="16;4;16"} # 16 Source; 16 Mappers; 16 Sink
 
 echo "[INFO] START: ${currdate}"
 echo "[INFO] Input: MPOLICY ${MPOLICY}"
@@ -115,7 +114,7 @@ function dynamic {
 		    echo "[INFO] Run Experiment"
 		    echo "[INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}"
 
-		    #cleanLogs
+		    cleanLogs
 		    
 		    #ssh ${IPMAPPER} sudo systemctl stop rapl_log
 		    #ssh ${IPMAPPER} sudo rm /data/rapl_log.log
