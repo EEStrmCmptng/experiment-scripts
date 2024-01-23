@@ -10,13 +10,21 @@ export MDVFS=${MDVFS:="1"}
 export ITRS=${ITRS:="1"}
 export FLINK_RATE=${FLINK_RATE:="200000_600000"} # 200K records-per-second for 10 minutes
 export BUFF=${BUFF:="-1"}
-export NCORES=${NCORES:=16}
+
 export IPSINK=${IPSINK:="10.10.1.4"}
 export IPMAPPER=${IPMAPPER:="10.10.1.3"}
 export IPSOURCE=${IPSOURCE:="10.10.1.2"}
 export MQUERY=${MQUERY:="query1"}
 export MPOLICY=${MPOLICY:="ondemand"} # Other policies: conservative powersave performance schedutil"
-export MCFG=${MCFG:="16;4;16"} # 16 Source; 16 Mappers; 16 Sink
+
+# The assumption is we use 4 nodes that are identical in terms of hardware
+# For now, we assume both the Source and Sink nodes use all available cores, i.e. why $(nproc) below 
+export NCORES=${NCORES:=$(nproc)}
+export MCFG=${MCFG:="$(nproc);4;$(nproc)"} # Sources; Mappers; Sinks
+
+# This is to ensure number of task slots is never less than the amount of cores
+# No work gets done by flink if taskmanager.numberOfTaskSlots <  max(Sources or Mappers or Sinks)
+sed -i "s/taskmanager.numberOfTaskSlots:.*/taskmanager.numberOfTaskSlots: $(nproc)/" flink-cfg/flink-conf.yaml
 
 echo "[INFO] START: ${currdate}"
 echo "[INFO] Input: MPOLICY ${MPOLICY}"
@@ -84,7 +92,7 @@ function cleanLogs {
     ssh ${IPSINK} rm -rf /users/hand32/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
 }
 
-function dynamic {
+function dynamic {        
     for cfg in $MCFG; do
 	echo $cfg
 	nsrc=$(echo $cfg | cut -d ";" -f 1)
@@ -116,15 +124,15 @@ function dynamic {
 
 		    cleanLogs
 		    
-		    #ssh ${IPMAPPER} sudo systemctl stop rapl_log
-		    #ssh ${IPMAPPER} sudo rm /data/rapl_log.log
-		    #ssh ${IPMAPPER} sudo systemctl restart rapl_log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+		    ssh ${IPMAPPER} sudo rm /data/rapl_log.log
+		    ssh ${IPMAPPER} sudo systemctl restart rapl_log
 		    
 		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 		    
-		    #ssh ${IPMAPPER} sudo systemctl stop rapl_log
- 		    #loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
- 		    #scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+ 		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+ 		    scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
 		    
  		    echo "[INFO] FINISHED"
 		done
