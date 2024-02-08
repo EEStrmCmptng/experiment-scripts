@@ -40,8 +40,8 @@ CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[1
 bootstrap='10.10.1.1'   # jobmanager
 victim='10.10.1.3'       # scp logs from victim to bootstrap
 #jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
-jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
-#jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
+#jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
+jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Query5-jar-with-dependencies.jar'
 
 jmip=bootstrap
@@ -502,7 +502,8 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     rest_client.overview()
     ur = upload_jar(jarpath)
     jar_id = ur['filename'].split('/')[-1]
-    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'cmpSize': 28, 'blurstep': 2})
+    #job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'cmpSize': 28, 'blurstep': 2})
+    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'blurstep': 2})
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print("deployed job id=", job_id)
@@ -561,7 +562,7 @@ if __name__ == '__main__':
     parser.add_argument("--nsource", help="num of source")
     parser.add_argument("--nsink", help="num of sink")
     parser.add_argument("--nmapper", help="num of mapper")
-    parser.add_argument("--query", help="query to run (i.e. query1, query5, imgproc)", required=True)
+    parser.add_argument("--query", help="query to run (i.e. query1, quer5y, imgproc)", required=True)
     #conservative, ondemand, userspace, powersave, performance, schedutil
     parser.add_argument("--policy", help="dvfs policy", choices=['conservative', 'ondemand', 'powersave', 'performance', 'schedutil', 'userspace'])
     args = parser.parse_args()
