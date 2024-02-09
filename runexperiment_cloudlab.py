@@ -40,8 +40,8 @@ CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[1
 bootstrap='10.10.1.1'   # jobmanager
 victim='10.10.1.3'       # scp logs from victim to bootstrap
 #jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
-#jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
-jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
+jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
+#jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Query5-jar-with-dependencies.jar'
 
 jmip=bootstrap
@@ -247,6 +247,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         tmid.append(tm['id'])
 
     clock=_clock
+    jstackCount=0
     print("starting...")
     while(clock>0):
         print("clock", clock, "-------------------------------------------------------------")
@@ -315,6 +316,13 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         ff.close()
         
         time.sleep(interval)
+
+        jstackCount+=interval
+        # every min
+        if jstackCount % 60 == 0:
+            jpid = int(runGetCmd(f"ssh {victim} pgrep -f java"))
+            runcmd(f"ssh {victim} jstack {jpid} > {flinklogdir}/../jstack{jstackCount}.raw")
+            
         clock-=interval
 
     gcmd="scp -r "+victim+":"+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/* "+flinklogdir+"/"+victim.replace('.','_')+"/"
