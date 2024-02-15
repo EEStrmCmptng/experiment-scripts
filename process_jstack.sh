@@ -6,6 +6,13 @@ while IFS= read -r line; do
     name=$(echo "$line" | grep -oE '"[^"]+"' | head -n1)
     cpu=$(echo "$line" | grep -o 'cpu=[0-9.]*' | sed 's/cpu=//')
     elapsed=$(echo "$line" | grep -o 'elapsed=[0-9.]*' | sed 's/elapsed=//')
+    tid=$(echo "$line" | grep -oP 'nid=\K[^ ]+')
+
+    #if [ -n "$tid" ]; then#
+#	echo $tid
+#	printf "%d" $tid
+#	#echo "0x57d21" | awk '{ printf "%d\n", $1 }'
+ #   fi
     
     # If elapsed is not empty, multiply it by 1000, convert from seconds to milliseconds
     if [ -n "$elapsed" ]; then
@@ -13,7 +20,7 @@ while IFS= read -r line; do
     fi
     
     # Print the extracted values separated by a comma if both name and cpu are not empty
-    if [ -n "$name" ] && [ -n "$cpu" ] && [ -n "$elapsed" ]; then
-        printf "%s, %s, %s\n" "$name" "$cpu" "$elapsed"
+    if [ -n "$name" ] && [ -n "$cpu" ] && [ -n "$elapsed" ] && [ -n "$tid" ]; then
+        printf "%s, %s, %s, %d\n" "$name" "$cpu" "$elapsed" "$tid"
     fi
 done < $1
