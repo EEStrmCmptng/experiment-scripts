@@ -247,7 +247,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         tmid.append(tm['id'])
 
     clock=_clock
-    jstackCount=0
+    #jstackCount=0
     print("starting...")
     while(clock>0):
         print("clock", clock, "-------------------------------------------------------------")
@@ -317,11 +317,11 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         
         time.sleep(interval)
 
-        jstackCount+=interval
+        #jstackCount+=interval
         # every min
-        if jstackCount % 60 == 0:
-            jpid = int(runGetCmd(f"ssh {victim} pgrep -f java"))
-            runcmd(f"ssh {victim} jstack {jpid} > {flinklogdir}/../jstack{jstackCount}.raw")
+        #if jstackCount % 60 == 0:
+        #    jpid = int(runGetCmd(f"ssh {victim} pgrep -f java"))
+        #    runcmd(f"ssh {victim} jstack {jpid} > {flinklogdir}/../jstack{jstackCount}.raw")
             
         clock-=interval
 
