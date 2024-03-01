@@ -9,7 +9,7 @@ function reset
 }
 
 # Pin all tids on CPU Package 0, hardcoded cores 0-7 for now
-function pin0
+function C1
 {
     while read line; do
 	taskset -cp 0-7 ${line##*,}
@@ -17,7 +17,7 @@ function pin0
 }
 
 # Pin all tids on CPU Package 1, hardcoded cores 8-15 for now
-function pin1
+function C2
 {
     while read line; do
 	taskset -cp 8-15 ${line##*,}
@@ -25,7 +25,7 @@ function pin1
 }
 
 # Pin all Netty tids to one CPU, passed in via argument
-function pinNetty
+function C3
 {
     while read line; do
 	case $line in
@@ -37,7 +37,7 @@ function pinNetty
 }
 
 # Pin all Mapper tids to CPU Package 0, all other tids to Package 1
-function pinMappers0
+function C4
 {
     while read line; do
 	case $line in
@@ -67,7 +67,7 @@ function pinMappers0_2
 }
 
 # Pin all Mapper tids to CPU Package 1, all other tids to Package 0
-function pinMappers1
+function C5
 {
     while read line; do
 	case $line in
