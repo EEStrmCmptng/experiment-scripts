@@ -31,7 +31,7 @@ function base {
 function doJstack
 {
     echo "🟢🟢 Run jstack to get thread info  🟢🟢"
-    sleep 240
+    sleep 180
     jstack $(pgrep -f java) > $EDIR/jstack.raw
     ./process_jstack.sh $EDIR/jstack.raw > $EDIR/jstack.processed
     sleep 5
