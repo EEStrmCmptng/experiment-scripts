@@ -278,6 +278,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
 
+        '''
         tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXP, tERXB, tETXP, tETXB = getStats()
         
         t_poll=str(tPOLL-GPOLL)
@@ -314,10 +315,15 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         ff=open(flinklogdir+'/../stats.csv', 'a')
         ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxp}, {t_erxb}, {t_etxp}, {t_etxb}\n")
         ff.close()
-        
-        time.sleep(interval)
+        '''
 
         #jstackCount+=interval
+        #tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXP, tERXB, tETXP, tETXB = getStats()
+        #ff=open(f"{flinklogdir}/../stats{jstackCount}.csv", "w")
+        #ff.write(f"{tPOLL}, {tC1}, {tC1E}, {tC3}, {tC6}, {tRXP}, {tRXB}, {tTXP}, {tTXB}, {tERXP}, {tERXB}, {tETXP}, {tERXB}\n")
+        #ff.close()
+        time.sleep(interval)
+        
         # every min
         #if jstackCount % 60 == 0:
         #    jpid = int(runGetCmd(f"ssh {victim} pgrep -f java"))
@@ -517,12 +523,12 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("deployed job id=", job_id)
     time.sleep(30)
 
-    GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
-    cleanITRlogs()
+    #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
+    #cleanITRlogs()
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
-    getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
+    #getITRlogs(KWD, NCORES, itrlogsdir, NREPEAT)
         
     ## get ifconfig RX, TX Bytes
     #rxpackets2, rxbytes2 = getRX()
