@@ -17,13 +17,6 @@ echo off | sudo tee /sys/devices/system/cpu/smt/control
 # disable TurboBoost
 echo "1" | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo
 
-# enable MSR to set DVFS statically
-sudo modprobe msr
-# lets run without sudo
-sudo setcap cap_sys_rawio=ep /usr/sbin/rdmsr 
-sudo setcap cap_sys_rawio=ep /usr/sbin/wrmsr
-sudo setcap cap_net_admin+ep /usr/sbin/ethtool
-
 # flink related python libraries
 pip install -r $WORKDIR/requirements.txt
 
@@ -62,11 +55,6 @@ esac
 # this is causing firmware issues on c6220 nodes, disable for now
 sudo rmmod mlx4_ib
 sudo rmmod mlx4_core
-
-# create /data for raplog service to run
-sudo mkdir /data
-cd $WORKDIR/uarch-configure/rapl-read/ && make raplog && sudo setcap cap_sys_rawio=ep raplog
-cd /etc/systemd/system && sudo ln -s $WORKDIR/rapl_service/rapl_log.service rapl_log.service
 
 # list current status
 sudo ufw status
@@ -126,15 +114,14 @@ sudo ufw status
 # disable redundant logging messages
 sudo ufw logging off
 
-# creates msr group and lets user rdmsr, wrmsr without sudo
-sudo groupadd msr
-sudo chgrp msr /dev/cpu/*/msr
-sudo ls -l /dev/cpu/*/msr
-sudo chmod g+rw /dev/cpu/*/msr
-sudo usermod -aG msr $(whoami)
+#setup rapl-service
+git clone --recursive https://github.com/handong32/rapl-service.git
+./rapl-service/setup.sh
 
-echo "**** NOTE: Re-login to this node for msr group changes to take effect ****"
-sudo newgrp msr
-
-
+# enable MSR to set DVFS statically
+sudo modprobe msr
+# lets run without sudo
+sudo setcap cap_sys_rawio=ep /usr/sbin/rdmsr 
+sudo setcap cap_sys_rawio=ep /usr/sbin/wrmsr
+sudo setcap cap_net_admin+ep /usr/sbin/ethtool
 
