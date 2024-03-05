@@ -116,7 +116,7 @@ sudo ufw logging off
 
 #setup rapl-service
 git clone --recursive https://github.com/handong32/rapl-service.git
-./rapl-service/setup.sh
+cd rapl-service && ./setup.sh
 
 # enable MSR to set DVFS statically
 sudo modprobe msr
