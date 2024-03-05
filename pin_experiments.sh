@@ -25,7 +25,7 @@ function base {
     ./cloudlab_setup/c6220/getStats.sh > $EDIR/$FUNCNAME/statsEND.csv
     cat /proc/stat > $EDIR/$FUNCNAME/procstatsEND.csv
     cp /tmp/rapl.log $EDIR/$FUNCNAME/
-    ssh 10.10.1.1 "tail -n 1 /users/hand32/experiment-scripts/logs/${FLINKC}/Flinklogs/'Operator_Source: Bids Source_0'" > $EDIR/$FUNCNAME/Source.0
+    ssh 10.10.1.1 "tail -n 1 ~/experiment-scripts/logs/${FLINKC}/Flinklogs/'Operator_Source: Bids Source_0'" > $EDIR/$FUNCNAME/Source.0
 }
 
 function doJstack
@@ -60,12 +60,7 @@ function doC
     ./cloudlab_setup/c6220/getStats.sh > $EDIR/$1/statsEND.csv
     cat /proc/stat > $EDIR/$1/procstatsEND.csv
     cp /tmp/rapl.log $EDIR/$1/
-    ssh 10.10.1.1 "tail -n 1 /users/hand32/experiment-scripts/logs/${FLINKC}/Flinklogs/'Operator_Source: Bids Source_0'" > $EDIR/$1/Source.0
-}
-
-function test1
-{
-    ssh 10.10.1.1 "tail -n 1 /users/hand32/experiment-scripts/logs/${FLINKC}/Flinklogs/'Operator_Source: Bids Source_0'"
+    ssh 10.10.1.1 "tail -n 1 ~/experiment-scripts/logs/${FLINKC}/Flinklogs/'Operator_Source: Bids Source_0'" > $EDIR/$1/Source.0
 }
 
 function run
