@@ -24,13 +24,13 @@ function C2
     done < $1
 }
 
-# Pin all Netty tids to one CPU, passed in via argument
+# Pin all Netty tids to CPU $nproc-1, passed in via argument
 function C3
 {
     while read line; do
 	case $line in
 	    *"Netty"* )
-		taskset -cp $2 ${line##*,}
+		taskset -cp $(($(nproc) - 1)) ${line##*,}
 	    ;;
 	esac	
     done < $1
@@ -76,6 +76,23 @@ function C5
 		;;
 	    *)
 		taskset -cp 0-7 ${line##*,}
+		;;
+	esac	
+    done < $1
+}
+
+# Pin all non-Mapper threads to core $nproc-1
+function C6
+{
+    while read line; do
+	case $line in
+	    *"Mapper"* )
+		# do nothing
+		echo "*** Skipping Mapper tid ${line##*,} ***"
+		;;
+	    *)
+		echo "taskset -cp $(($(nproc) - 1)) ${line##*,}"
+		taskset -cp $(($(nproc) - 1)) ${line##*,}
 		;;
 	esac	
     done < $1
