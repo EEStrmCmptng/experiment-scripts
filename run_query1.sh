@@ -1,7 +1,7 @@
 #!/bin/bash
 
 currdate=`date +%m_%d_%Y_%H_%M_%S`
-set -x
+#set -x
 
 export BEGIN_ITER=${BEGIN_ITER:="0"}
 export NITERS=${NITERS:="0"}
@@ -124,15 +124,15 @@ function dynamic {
 
 		    cleanLogs
 		    
-		    #ssh ${IPMAPPER} sudo systemctl stop rapl_log
-		    #ssh ${IPMAPPER} sudo rm /data/rapl_log.log
-		    #ssh ${IPMAPPER} sudo systemctl restart rapl_log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+		    ssh ${IPMAPPER} sudo rm /tmp/rapl.log
+		    ssh ${IPMAPPER} sudo systemctl restart rapl_log
 		    
 		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 		    
-		    #ssh ${IPMAPPER} sudo systemctl stop rapl_log
- 		    #loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
- 		    #scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
+		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+ 		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+ 		    scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
 		    
  		    echo "[INFO] FINISHED"
 		done
@@ -148,8 +148,8 @@ function dynamicPin {
 	nmapper=$(echo $cfg | cut -d ";" -f 2)
 	nsink=$(echo $cfg | cut -d ";" -f 3)
 	
-	#echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink"
-	#python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink
+	echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink"
+	python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink
 	
 	rm flink-cfg/schedulercfg
 	for t in `seq 1 1 $nsrc`; do
@@ -162,8 +162,12 @@ function dynamicPin {
 	    echo "Sink; ${IPSINK}" >> flink-cfg/schedulercfg
 	done
 
-	#echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink"
-	#python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
+	echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink"
+	python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
+
+	#echo "[INFO] WARMUP: python -u runexperiment_cloudlab.py --flinkrate 66666_66666 --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy ondemand --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}"
+	#python -u runexperiment_cloudlab.py --flinkrate "66666_66666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+	python -u runexperiment_cloudlab.py --flinkrate "100_66666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 	
 	for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
 	    for fr in $FLINK_RATE; do
@@ -173,21 +177,13 @@ function dynamicPin {
 		    
 		    cleanLogs
 
+		    ## Start pinning process on mapper node
 		    fc="${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
 		    echo $fc
 		    ssh ${IPMAPPER} "cd ~/experiment-scripts && FLINKC=${fc} ./pin_experiments.sh run" &
-		    
-		    #ssh ${IPMAPPER} sudo systemctl stop rapl_log
-		    #ssh ${IPMAPPER} sudo rm /data/rapl_log.log
-		    #ssh ${IPMAPPER} sudo systemctl restart rapl_log
 
-		    #ssh ${IPMAPPER} "FLINKC='${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}' ~/experiment-scripts/pin_experiments.sh run" &
-		    
+		    ## Run benchmark
 		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
-		    
-		    #ssh ${IPMAPPER} sudo systemctl stop rapl_log
- 		    #loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
- 		    #scp -r ${IPMAPPER}:/data/rapl_log.log ${loc}/server2_rapl.log
 		    
  		    echo "[INFO] FINISHED"
 		done
