@@ -17,6 +17,10 @@ export IPSOURCE=${IPSOURCE:="10.10.1.2"}
 export MQUERY=${MQUERY:="query1"}
 export MPOLICY=${MPOLICY:="ondemand"} # Other policies: conservative powersave performance schedutil"
 
+export NSOURCES=${NSOURCES:="4 8 12 16 24 32 64"}
+export NMAPPERS=${NMAPPERS:="4 8 12 16 24 32 64"}
+export NSINKS=${NSINKS:="4 8 12 16 24 32 64"}
+
 # The assumption is we use 4 nodes that are identical in terms of hardware
 # For now, we assume both the Source and Sink nodes use all available cores, i.e. why $(nproc) below 
 export NCORES=${NCORES:=$(nproc)}
@@ -24,7 +28,8 @@ export MCFG=${MCFG:="$(nproc);4;$(nproc)"} # Sources; Mappers; Sinks
 
 # This is to ensure number of task slots is never less than the amount of cores
 # No work gets done by flink if taskmanager.numberOfTaskSlots <  max(Sources or Mappers or Sinks)
-sed -i "s/taskmanager.numberOfTaskSlots:.*/taskmanager.numberOfTaskSlots: $(nproc)/" flink-cfg/flink-conf.yaml
+#sed -i "s/taskmanager.numberOfTaskSlots:.*/taskmanager.numberOfTaskSlots: $(nproc)/" flink-cfg/flink-conf.yaml
+sed -i "s/taskmanager.numberOfTaskSlots:.*/taskmanager.numberOfTaskSlots: 64/" flink-cfg/flink-conf.yaml
 
 echo "[INFO] START: ${currdate}"
 echo "[INFO] Input: MPOLICY ${MPOLICY}"
@@ -37,6 +42,9 @@ echo "[INFO] Input: BUFF ${BUFF}"
 echo "[INFO] Input: NCORES ${NCORES}"
 echo "[INFO] Input: IPMAPPER ${IPMAPPER}"
 echo "[INFO] Input: MCFG ${MCFG}"
+echo "[INFO] Input: NSOURCES ${NSOURCES}"
+echo "[INFO] Input: NMAPPERS ${NMAPPERS}"
+echo "[INFO] Input: NSINKS ${NSINKS}"
 
 function dvfspolicy {
     for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
@@ -115,6 +123,9 @@ function dynamic {
 
 	echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink"
 	python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
+
+	# Doing a warmup run
+	python -u runexperiment_cloudlab.py --flinkrate "100_66666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 	
 	for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
 	    for fr in $FLINK_RATE; do
@@ -165,9 +176,9 @@ function dynamicPin {
 	echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink"
 	python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
 
-	#echo "[INFO] WARMUP: python -u runexperiment_cloudlab.py --flinkrate 66666_66666 --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy ondemand --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}"
-	#python -u runexperiment_cloudlab.py --flinkrate "66666_66666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
-	python -u runexperiment_cloudlab.py --flinkrate "100_66666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+	echo "[INFO] WARMUP: python -u runexperiment_cloudlab.py --flinkrate 66666_66666 --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy ondemand --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}"
+	python -u runexperiment_cloudlab.py --flinkrate "66666_66666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+	#python -u runexperiment_cloudlab.py --flinkrate "100_66666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 	
 	for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
 	    for fr in $FLINK_RATE; do
@@ -180,7 +191,7 @@ function dynamicPin {
 		    ## Start pinning process on mapper node
 		    fc="${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
 		    echo $fc
-		    ssh ${IPMAPPER} "cd ~/experiment-scripts && FLINKC=${fc} ./pin_experiments.sh run" &
+		    ssh ${IPMAPPER} "cd ~/experiment-scripts && FLINKC=${fc} CS='C1 C2 C3 C6' ./pin_experiments.sh run" &
 
 		    ## Run benchmark
 		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
@@ -244,6 +255,59 @@ function static {
 	    done
 	done
     done
+}
+
+function comboSMS
+{
+    for nsrc in $NSOURCES; do
+	for nmapper in $NMAPPERS; do
+	    for nsink in $NSINKS; do		
+		rm flink-cfg/schedulercfg
+		for t in `seq 1 1 $nsrc`; do
+		    echo "Source; ${IPSOURCE}" >> flink-cfg/schedulercfg
+		done
+		for t in `seq 1 1 $nmapper`; do
+		    echo "Mapper; ${IPMAPPER}" >> flink-cfg/schedulercfg
+		done
+		for t in `seq 1 1 $nsink`; do
+		    echo "Sink; ${IPSINK}" >> flink-cfg/schedulercfg
+		done		
+		
+		for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
+		    for fr in $FLINK_RATE; do
+			for pol in $MPOLICY; do
+			    echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink"
+			    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink
+
+			    echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink"
+			    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
+			    
+			    # Doing a warmup run first
+			    python -u runexperiment_cloudlab.py --flinkrate "100_30000" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+		
+			    echo "[INFO] Run Experiment"
+			    echo "🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢"
+
+			    cleanLogs			    
+			    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+			    ssh ${IPMAPPER} sudo rm /tmp/rapl.log
+			    ssh ${IPMAPPER} sudo systemctl restart rapl_log
+			    sleep 1
+			    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+			    sleep 1			    
+			    ssh ${IPMAPPER} sudo systemctl stop rapl_log
+ 			    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+ 			    scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
+			    scp -r $loc kd:/home/handong/sesadata/flink/3_16_2024_d430_imgproc/
+ 			    echo "[INFO] FINISHED"
+			done
+		    done
+		done
+	    done
+	done
+    done
+    
+
 }
 
 function test
