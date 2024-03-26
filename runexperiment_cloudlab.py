@@ -278,7 +278,6 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
 
-        '''
         tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXP, tERXB, tETXP, tETXB = getStats()
         
         t_poll=str(tPOLL-GPOLL)
@@ -315,7 +314,6 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         ff=open(flinklogdir+'/../stats.csv', 'a')
         ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxp}, {t_erxb}, {t_etxp}, {t_etxb}\n")
         ff.close()
-        '''
 
         #jstackCount+=interval
         #tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXP, tERXB, tETXP, tETXB = getStats()
