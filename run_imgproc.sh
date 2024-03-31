@@ -79,7 +79,7 @@ function comboSMS
 			    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
 			    
 			    # Doing a warmup run first
-			    python -u runexperiment_cloudlab.py --flinkrate "100_300000" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+			    python -u runexperiment_cloudlab.py --flinkrate "100_300000" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 		
 			    echo "[INFO] Run Experiment"
 			    echo "🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢"

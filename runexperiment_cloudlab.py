@@ -477,7 +477,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     #setCores(NCORES)
 
     #setITR(ITR)
-    #setDVFS(DVFS)
+    setDVFS(DVFS)
 
     _flinkrate=FLINKRATE.split('_')
     _flinkdur=0
