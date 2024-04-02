@@ -5,6 +5,11 @@ C1=0
 C1E=0
 C3=0
 C6=0
+POLLTIME=0
+C1TIME=0
+C1ETIME=0
+C3TIME=0
+C6TIME=0
 RXP=0
 RXB=0
 TXP=0
@@ -23,6 +28,16 @@ do
     C6=$((C6 + $(cat /sys/devices/system/cpu/cpu${c}/cpuidle/state4/usage)))
 done
 
+for (( c=0; c<$(nproc); c++ ))
+do
+    POLLTIME=$((POLL + $(cat /sys/devices/system/cpu/cpu${c}/cpuidle/state0/time)))
+    C1TIME=$((C1 + $(cat /sys/devices/system/cpu/cpu${c}/cpuidle/state1/time)))
+    C1ETIME=$((C1E + $(cat /sys/devices/system/cpu/cpu${c}/cpuidle/state2/time)))
+    C3TIME=$((C3 + $(cat /sys/devices/system/cpu/cpu${c}/cpuidle/state3/time)))
+    C6TIME=$((C6 + $(cat /sys/devices/system/cpu/cpu${c}/cpuidle/state4/time)))
+done
+
+
 tmp=$(ifconfig | grep -A5 10.10.1 | grep 'RX packets' | grep '\w*')
 RXP=$(echo $tmp | cut -f3 -d' ')
 RXB=$(echo $tmp | cut -f5 -d' ')
@@ -39,4 +54,4 @@ tmp=$(ifconfig | grep -A5 128.110.96 | grep 'TX packets' | grep '\w*')
 ETXP=$(echo $tmp | cut -f3 -d' ')
 ETXB=$(echo $tmp | cut -f5 -d' ')
 
-echo $POLL, $C1, $C1E, $C3, $C6, $RXP, $RXB, $TXP, $TXB, $ERXP, $ERXB, $ETXP, $ETXB
+echo $POLLTIME, $C1TIME, $C1ETIME, $C3TIME, $C6TIME, $POLL, $C1, $C1E, $C3, $C6, $RXP, $RXB, $TXP, $TXB, $ERXP, $ERXB, $ETXP, $ETXB

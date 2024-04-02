@@ -278,8 +278,21 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
 
-        tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXP, tERXB, tETXP, tETXB = getStats()
-        
+        tPOLLTIME, tC1TIME, tC1ETIME, tC3TIME, tC6TIME, tPOLL, tC1, tC1E, tC3, tC6, tRXP, tRXB, tTXP, tTXB, tERXP, tERXB, tETXP, tETXB = getStats()
+        mem_swpd, mem_buff, mem_cache = getMem() 
+         
+        t_polltime=str(tPOLLTIME-GPOLLTIME)
+        GPOLLTIME = tPOLLTIME
+        t_c1time=str(tC1TIME-GC1TIME)
+        GC1TIME = tC1TIME
+        t_c1etime=str(tC1ETIME-GC1ETIME)
+        GC1ETIME = tC1ETIME
+        t_c3time=str(tC3TIME-GC3TIME)
+        GC3TIME = tC3TIME
+        t_c6time=str(tC6TIME-GC6TIME)
+        GC6TIME = tC6TIME
+
+
         t_poll=str(tPOLL-GPOLL)
         GPOLL = tPOLL
         t_c1=str(tC1-GC1)
@@ -312,7 +325,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
         GETXB = tETXB
 
         ff=open(flinklogdir+'/../stats.csv', 'a')
-        ff.write(f"{t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxp}, {t_erxb}, {t_etxp}, {t_etxb}\n")
+        ff.write(f"{t_polltime}, {t_c1time}, {t_c1etime}, {t_c3time}, {t_c6time}, {t_poll}, {t_c1}, {t_c1e}, {t_c3}, {t_c6}, {t_rxp}, {t_rxb}, {t_txp}, {t_txb}, {t_erxp}, {t_erxb}, {t_etxp}, {t_etxb} {mem_swpd}, {mem_buff}, {mem_cache}\n")
         ff.close()
 
         #jstackCount+=interval
@@ -526,8 +539,13 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("deployed job id=", job_id)
     time.sleep(30)
 
+<<<<<<< HEAD
     #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
     #cleanITRlogs()
+=======
+    GPOLLTIME, GC1TIME, GC1ETIME, GC3TIME, GC6TIME, GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
+    cleanITRlogs()
+>>>>>>> 77add95 (Sana's master's thesis first commit)
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
