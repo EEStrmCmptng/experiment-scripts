@@ -56,7 +56,6 @@ GRERUNFLINK=False
 GSOURCE=14
 GMAPPER=16
 GSINK=16
-GSLEEPDISABLE=0
 
 # global sleep state counter
 GPOLL=0
@@ -472,7 +471,7 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISABLE):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER, GSLEEPDISABLE
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER
     #resetAllCores()
     #setCores(NCORES)
 
@@ -584,7 +583,7 @@ if __name__ == '__main__':
     parser.add_argument("--query", help="query to run (i.e. query1, quer5y, imgproc)", required=True)
     #conservative, ondemand, userspace, powersave, performance, schedutil
     parser.add_argument("--policy", help="dvfs policy", choices=['conservative', 'ondemand', 'powersave', 'performance', 'schedutil', 'userspace'])
-    parser.add_argument("--sleepdisable", help="enable/disable cstate sleep states", choices=[0, 1])
+    parser.add_argument("--sleepdisable", help="enable/disable cstate sleep states")
     args = parser.parse_args()
 
     if args.runcmd:
@@ -641,7 +640,7 @@ if __name__ == '__main__':
         GMAPPER = int(args.nmapper)
     if args.sleepdisable:
         print(f"Sleep Disabled = {args.sleepdisable}")
-        GSLEEPDISABLE = int(args.sleepdisable)
+        SLEEPDISABLE = int(args.sleepdisable)
 
     try:
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
