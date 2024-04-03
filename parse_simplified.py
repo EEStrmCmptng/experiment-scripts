@@ -18,7 +18,7 @@ policies = ["ondemand", "conservative", "performance", "schedutil", "powersave"]
 times = [300000]
 
 # diff flink rates
-rates = [i for i in range(100,200,100)] #2100 because python excludes last value.
+rates = [i for i in range(100,2100,100)] #2100 because python excludes last value.
 
 # number of mappers
 mappers = [16] #[4,8,12,16,20]
