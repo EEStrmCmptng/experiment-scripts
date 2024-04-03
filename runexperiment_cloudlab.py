@@ -56,6 +56,7 @@ GRERUNFLINK=False
 GSOURCE=14
 GMAPPER=16
 GSINK=16
+GSLEEPDISABLE=0
 
 # global sleep state counter
 GPOLL=0
@@ -470,9 +471,8 @@ def getTX():
     txbytes = int(retlist[5])
     return txpackets, txbytes
     
-def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER
-    
+def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISABLE):
+    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER, GSLEEPDISABLE
     #resetAllCores()
     #setCores(NCORES)
 
@@ -489,6 +489,8 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("Flink job duration: ", _flinkdur)
 
     KWD=f"{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_mapper{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
+    if SLEEPDISABLE == 1:
+        KWD=f"disabled_{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_mapper{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
     #KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_"+str(GPOLICY)+"dvfs"+str(DVFS)+'_repeat'+str(NREPEAT)
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
@@ -582,6 +584,7 @@ if __name__ == '__main__':
     parser.add_argument("--query", help="query to run (i.e. query1, quer5y, imgproc)", required=True)
     #conservative, ondemand, userspace, powersave, performance, schedutil
     parser.add_argument("--policy", help="dvfs policy", choices=['conservative', 'ondemand', 'powersave', 'performance', 'schedutil', 'userspace'])
+    parser.add_argument("--sleepdisable", help="enable/disable cstate sleep states", choices=[0, 1])
     args = parser.parse_args()
 
     if args.runcmd:
@@ -636,10 +639,13 @@ if __name__ == '__main__':
     if args.nmapper:
         print(f"Mapper = {args.nmapper}")
         GMAPPER = int(args.nmapper)
-        
+    if args.sleepdisable:
+        print(f"Sleep Disabled = {args.sleepdisable}")
+        GSLEEPDISABLE = int(args.sleepdisable)
+
     try:
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
-        runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT)
+        runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISABLE)
     except Exception as error:
         print(error)
         traceback.print_exc()

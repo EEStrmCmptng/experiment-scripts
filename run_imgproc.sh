@@ -25,6 +25,7 @@ export NSINKS=${NSINKS:="4 8 12 16 24 32 64"}
 # For now, we assume both the Source and Sink nodes use all available cores, i.e. why $(nproc) below 
 export NCORES=${NCORES:=$(nproc)}
 export MCFG=${MCFG:="$(nproc);4;$(nproc)"} # Sources; Mappers; Sinks
+export SLEEPDISABLE=${SLEEPDISABLE:="0"} # Enable/Disable Cstates on mapper. 0 = cstates enabled
 
 # This is to ensure number of task slots is never less than the amount of cores
 # No work gets done by flink if taskmanager.numberOfTaskSlots <  max(Sources or Mappers or Sinks)
@@ -45,6 +46,7 @@ echo "[INFO] Input: MCFG ${MCFG}"
 echo "[INFO] Input: NSOURCES ${NSOURCES}"
 echo "[INFO] Input: NMAPPERS ${NMAPPERS}"
 echo "[INFO] Input: NSINKS ${NSINKS}"
+echo "[INFO] Input: SLEEPDISABLE ${SLEEPDISABLE}"
 
 function cleanLogs {
     rm -rf /users/hand32/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
@@ -79,22 +81,22 @@ function comboSMS
 			    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
 			    
 			    # Doing a warmup run first
-			    python -u runexperiment_cloudlab.py --flinkrate "100_300000" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+			    python -u runexperiment_cloudlab.py --flinkrate "100_300000" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} --sleepdisable ${SLEEPDISABLE}
 		
 			    echo "[INFO] Run Experiment"
-			    echo "🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢"
+			    echo "🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} --sleepdisable ${SLEEPDISABLE}🟢"
 
 			    cleanLogs			    
 			    ssh ${IPMAPPER} sudo systemctl stop rapl_log
 			    ssh ${IPMAPPER} sudo rm /tmp/rapl.log
 			    ssh ${IPMAPPER} sudo systemctl restart rapl_log
 			    sleep 1
-			    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+			    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} --sleepdisable ${SLEEPDISABLE}
 			    sleep 1			    
 			    ssh ${IPMAPPER} sudo systemctl stop rapl_log
  			    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
  			    scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
-			    scp -r $loc kd:/home/handong/sesadata/flink/3_16_2024_d430_imgproc/
+			    #scp -r $loc kd:/home/handong/sesadata/flink/3_16_2024_d430_imgproc/
  			    echo "[INFO] FINISHED"
 			done
 		    done
@@ -103,6 +105,8 @@ function comboSMS
 	done
     done    
 }
+
+comboSMS
 
 echo "[INFO] END: ${currdate}"
 
