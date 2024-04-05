@@ -95,7 +95,10 @@ function comboSMS
 			    sleep 1			    
 			    ssh ${IPMAPPER} sudo systemctl stop rapl_log
  			    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
- 			    scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
+ 			    if [[ "$SLEEPDISABLE" == "1" ]]; then
+                            loc="./logs/disabled_${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+                            fi
+                            scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
 			    #scp -r $loc kd:/home/handong/sesadata/flink/3_16_2024_d430_imgproc/
  			    echo "[INFO] FINISHED"
 			done
