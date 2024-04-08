@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export PERFSTATMETRICS=${PERFSTATMETRICS:="power/energy-cores/,power/energy-pkg/,power/energy-ram/"}
-export RESHEADERS=${RESHEADERS:="STATE,RATE,POLICY,CORE_ENERGY,PKG_ENERGY,RAM_ENERGY,POLL_RES,C1_RES,C1E_RES,C3_RES,C6_RES"}
 export POLICIES=${POLICIES:="performance powersave conservative ondemand schedutil"}
 export IPMAPPER=${IPMAPPER:="10.10.1.3"}
 
@@ -26,7 +24,8 @@ for ((state = 0; state < 2; state++)); do # 2 iterations: 0 = cstates enabled, 1
     done
 done
 
-python parse_simplified.py --name imgproc --log ./logs
+python parse_simplified.py --name imgproc --log ~/experiment-scripts/logs
+cp ~/experiment-scripts/combined.csv ./results.csv
 
 echo "ALL RUNS COMPLETE"
 
