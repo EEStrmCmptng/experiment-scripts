@@ -40,8 +40,8 @@ CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[1
 bootstrap='10.10.1.1'   # jobmanager
 victim='10.10.1.3'       # scp logs from victim to bootstrap
 #jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
-#jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
-jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
+jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
+#jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Query5-jar-with-dependencies.jar'
 
 jmip=bootstrap
@@ -56,6 +56,14 @@ GRERUNFLINK=False
 GSOURCE=14
 GMAPPER=16
 GSINK=16
+
+#Seep state time
+GPOLLTIME=0
+GC1TIME=0
+GC1ETIME=0
+GC3TIME=0
+GC6TIME=0
+
 
 # global sleep state counter
 GPOLL=0
@@ -240,7 +248,7 @@ def getITRlogs(KWD, cores, itrlogsdir, NREPEAT):
 
 # get Flink logs 
 def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB
+    global GPOLLTIME, GC1TIME, GC1ETIME, GC3TIME, GC6TIME, GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB
     
     tmid=[]
     for tm in rest_client.taskmanagers.all():
@@ -459,6 +467,17 @@ def getCStates():
     #return stateslist   
     #print(ncores)
 
+def getMem():
+    ret = runGetCmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/getMemoryUsage.sh")
+    llx = []
+    for x in ret.split(','):
+        if x == '' or x == ' ' or x == '\n':
+            llx.append(0)
+        else:
+            llx.append(int(x))
+    return llx
+
+
 def getStats():
     ret = runGetCmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/getStats.sh")
     llx = []
@@ -484,7 +503,7 @@ def getTX():
     return txpackets, txbytes
     
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
-    global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER
+    global GPOLLTIME, GC1TIME, GC1ETIME, GC3TIME, GC6TIME, GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER
     
     #resetAllCores()
     #setCores(NCORES)
@@ -539,13 +558,10 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT):
     print("deployed job id=", job_id)
     time.sleep(30)
 
-<<<<<<< HEAD
-    #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
-    #cleanITRlogs()
-=======
+
     GPOLLTIME, GC1TIME, GC1ETIME, GC3TIME, GC6TIME, GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB = getStats()
     cleanITRlogs()
->>>>>>> 77add95 (Sana's master's thesis first commit)
+
     
     # get ITR log + flink log
     getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec

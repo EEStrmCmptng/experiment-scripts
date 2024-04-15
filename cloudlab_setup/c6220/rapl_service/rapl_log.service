@@ -2,9 +2,8 @@
 Description=Service to store rapl energy log
 
 [Service]
-WorkingDirectory=/users/hand32/experiment-scripts/cloudlab_setup/c6220/rapl_service/
+WorkingDirectory=/users/sanas/experiment-scripts/cloudlab_setup/c6220/rapl-service
 ExecStart=/usr/bin/python rapl_log.py
-#Restart=always
 
 [Install]
 WantedBy=multi-user.target
