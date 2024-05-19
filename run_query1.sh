@@ -283,7 +283,7 @@ function comboSMS
 			    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
 			    
 			    # Doing a warmup run first
-			    python -u runexperiment_cloudlab.py --flinkrate "100_30000" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+			    python -u runexperiment_cloudlab.py --flinkrate "666_6666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
 		
 			    echo "[INFO] Run Experiment"
 			    echo "🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢"
@@ -306,8 +306,59 @@ function comboSMS
 	    done
 	done
     done
-    
+}
 
+function comboSMStatic
+{
+    for nsrc in $NSOURCES; do
+	for nmapper in $NMAPPERS; do
+	    for nsink in $NSINKS; do		
+		rm flink-cfg/schedulercfg
+		for t in `seq 1 1 $nsrc`; do
+		    echo "Source; ${IPSOURCE}" >> flink-cfg/schedulercfg
+		done
+		for t in `seq 1 1 $nmapper`; do
+		    echo "Mapper; ${IPMAPPER}" >> flink-cfg/schedulercfg
+		done
+		for t in `seq 1 1 $nsink`; do
+		    echo "Sink; ${IPSINK}" >> flink-cfg/schedulercfg
+		done		
+		
+		for i in `seq ${BEGIN_ITER} 1 $NITERS`; do
+		    for fr in $FLINK_RATE; do
+			for itr in $ITRS; do
+			    for dvfs in $MDVFS; do			
+				echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink"
+				python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink
+
+				echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink"
+				python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
+				
+				# Doing a warmup run first
+				python -u runexperiment_cloudlab.py --flinkrate "666_6666" --bufftimeout -1 --itr $itr --dvfs $dvfs --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "userspace" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+				
+				echo "[INFO] Run Experiment"
+				echo "🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate 666_6666 --bufftimeout -1 --itr $itr --dvfs $dvfs --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy userspace --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢"
+
+				cleanLogs
+				ssh ${IPMAPPER} sudo systemctl stop rapl_log
+				ssh ${IPMAPPER} sudo rm /tmp/rapl.log
+				ssh ${IPMAPPER} sudo systemctl restart rapl_log
+				sleep 1
+				python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr $itr --dvfs $dvfs --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy "userspace" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+				sleep 1
+				ssh ${IPMAPPER} sudo systemctl stop rapl_log
+ 				loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr${itr}_userspacedvfs${dvfs}_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+ 				scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
+				scp -r $loc kd:/home/handong/sesadata/flink/5_11_2024_itrdvfsfor12mappers/
+ 				echo "[INFO] FINISHED"
+			    done
+			done
+		    done
+		done
+	    done
+	done
+    done
 }
 
 function test

@@ -40,8 +40,8 @@ CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[1
 bootstrap='10.10.1.1'   # jobmanager
 victim='10.10.1.3'       # scp logs from victim to bootstrap
 #jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
-#jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
-jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
+jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
+#jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Query5-jar-with-dependencies.jar'
 
 jmip=bootstrap
@@ -475,7 +475,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISAB
     #resetAllCores()
     #setCores(NCORES)
 
-    #setITR(ITR)
+    setITR(ITR)
     setDVFS(DVFS)
 
     _flinkrate=FLINKRATE.split('_')
@@ -518,10 +518,10 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISAB
 
 
     ## for query1 only
-    #job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'blurstep': 2})
+    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'blurstep': 2})
 
     ## for imgproc only
-    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'pmap': GMAPPER, 'psrc': GSOURCE, 'psink': GSINK, 'blurstep': 2, 'batchSize': 1})
+    #job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'pmap': GMAPPER, 'psrc': GSOURCE, 'psink': GSINK, 'blurstep': 2, 'batchSize': 1})
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print("deployed job id=", job_id)
@@ -638,10 +638,13 @@ if __name__ == '__main__':
     if args.nmapper:
         print(f"Mapper = {args.nmapper}")
         GMAPPER = int(args.nmapper)
+
     if args.sleepdisable:
         print(f"Sleep Disabled = {args.sleepdisable}")
         SLEEPDISABLE = int(args.sleepdisable)
-
+    else:
+        SLEEPDISABLE = 0
+        
     try:
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
         runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISABLE)
