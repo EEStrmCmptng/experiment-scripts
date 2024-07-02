@@ -13,10 +13,10 @@ import time
 policies = ["ondemand"]
 
 # total time to run for, in ms
-times = [300000, 600000]
+times = [600000]
 
 # diff flink rates
-rates = [3000]
+rates = [1000, 2000, 3000, 4000, 8000, 16000, 32000, 100000, 200000, 300000, 600000, 1000000]
 
 # number of windows
 windows = [4, 12]
@@ -28,7 +28,7 @@ windowlen = [5, 20, 60]
 itrs = [1]
 dvfss = [1]
 sources = [1] # num of sources
-sinks = [16] # num of sinks
+sinks = [8, 16] # num of sinks
 ncores = [16] # num of physical cores to use
 
 df_dict = {
@@ -126,8 +126,8 @@ def parseFile(loc, rate, itr, dvfs, policy, i, window, timems, windowlength):
     # server2_rapl.log collects Power (energy/second) data
     jfile = f"{loc}/rapl.log"
     with open(jfile) as file:
-        lines = [float(line.rstrip()) for line in file]
-
+        lines = [float(line.split(' ')[0]) for line in file]
+        
         # extract values from 40%-80% of total time to account for warmup time and capture region of compute
         time_in_secs = timems/1000
         stime = int(time_in_secs * 0.4)
@@ -171,7 +171,7 @@ def parse(loc1, name, ratetype, checkpointinginterval, checkpointingmode, rocksd
     # print(df_dict)
     dd1 = pd.DataFrame(df_dict)
     print(len(dd1.index))    
-    dd1.to_csv(f"{combined_file_name}.csv", mode='w')
+    dd1.to_csv(f"{loc1}/combined.csv", mode='w')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

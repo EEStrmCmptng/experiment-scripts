@@ -15,7 +15,7 @@ export IPSINK=${IPSINK:="10.10.1.4"}
 export IPWINDOW=${IPWINDOW:="10.10.1.3"}
 export IPSOURCE=${IPSOURCE:="10.10.1.2"}
 export WINDOW_LENGTH=${WINDOW_LENGTH:="0"}
-export MQUERY=${MQUERY:="query1"}
+export MQUERY=${MQUERY:="query5"}
 export MPOLICY=${MPOLICY:="ondemand"} # Other policies: conservative powersave performance schedutil
 
 # Checkpointing
@@ -128,10 +128,11 @@ function dynamic {
 				fi
 				
 				if [[ "$FLINK_CHECKPOINTING_ENABLED" == "true" ]]; then
-				    loc="${loc}_cpint${FLINK_CHECKPOINTING_INTERVAL}_cpmode_${FLINK_CHECKPOINTING_MODE}"
-				    if [[ "$FLINK_ROCKSDB_STATE_BACKEND_ENABLED" == "true" ]]; then
-					loc="${loc}_cpbckend_rocksdb"
-				    fi
+				    loc="${loc}_cpint${FLINK_CHECKPOINTING_INTERVAL}_cpmode_${FLINK_CHECKPOINTING_MODE}"				    
+				fi
+
+				if [[ "$FLINK_ROCKSDB_STATE_BACKEND_ENABLED" == "true" ]]; then
+				    loc="${loc}_cpbckend_rocksdb"
 				fi
 				
 				loc="${loc}_repeat${i}"

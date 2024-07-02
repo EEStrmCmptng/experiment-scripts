@@ -425,9 +425,8 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, FLINKRATETYPE, BUFFTIME
         KWD=f"{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fratetype_{FLINKRATETYPE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_window{GMAPPER}_sink{GSINK}_windowlength{GWINDOWLENGTH}"
         if GCPENABLED:
             KWD=f"{KWD}_cpint{GCPINTERVAL}_cpmode_{GCP_INPUT_MAP[GCPMODE]}"
-            if GCPROCKSDBENABLED:
-                KWD=f"{KWD}_cpbckend_rocksdb"
-
+        if GCPROCKSDBENABLED:
+            KWD=f"{KWD}_cpbckend_rocksdb"
         KWD=f"{KWD}_repeat{NREPEAT}"
     else:
         KWD=f"{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fratetype_{FLINKRATETYPE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_window{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
