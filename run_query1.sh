@@ -5,9 +5,10 @@ currdate=`date +%m_%d_%Y_%H_%M_%S`
 
 export BEGIN_ITER=${BEGIN_ITER:="0"}
 export NITERS=${NITERS:="0"}
-#export MDVFS=${MDVFS:="0c00 0d00 0e00 0f00 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 1a00"}
-export MDVFS=${MDVFS:="1"}
-export ITRS=${ITRS:="1"}
+export MDVFS=${MDVFS:="0c00 0d00 0e00 0f00 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 1a00"}
+#export MDVFS=${MDVFS:="1"}
+#export ITRS=${ITRS:="1"}
+export ITRS=${ITRS:="2 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000"}
 export FLINK_RATE=${FLINK_RATE:="200000_600000"} # 200K records-per-second for 10 minutes
 export BUFF=${BUFF:="-1"}
 
@@ -298,7 +299,7 @@ function comboSMS
 			    ssh ${IPMAPPER} sudo systemctl stop rapl_log
  			    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
  			    scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
-			    scp -r $loc kd:/home/handong/sesadata/flink/3_16_2024_d430_imgproc/
+			    #scp -r $loc kd:/home/handong/sesadata/flink/3_16_2024_d430_imgproc/
  			    echo "[INFO] FINISHED"
 			done
 		    done
@@ -350,7 +351,7 @@ function comboSMStatic
 				ssh ${IPMAPPER} sudo systemctl stop rapl_log
  				loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr${itr}_userspacedvfs${dvfs}_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
  				scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
-				scp -r $loc kd:/home/handong/sesadata/flink/5_11_2024_itrdvfsfor12mappers/
+				scp -r $loc kd:/home/handong/sesadata/flink/7_3_2024/
  				echo "[INFO] FINISHED"
 			    done
 			done

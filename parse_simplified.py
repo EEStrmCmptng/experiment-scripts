@@ -11,14 +11,37 @@ from os import path
 import sys
 import time
 
+# DVFS to CPU frequency map
+dvfs_dict = {
+    "0x1" : 1,
+    "0x0c00" :  1.2,
+    "0x0d00" :  1.3,
+    "0x0e00" :  1.4,
+    "0x0f00" :  1.5,
+    "0x1000" : 1.6,
+    "0x1100" : 1.7,
+    "0x1200" : 1.8,
+    "0x1300" : 1.9,
+    "0x1400" : 2.0,
+    "0x1500" : 2.1,
+    "0x1600" : 2.2,
+    "0x1700" : 2.3,
+    "0x1800" : 2.4,
+    "0x1900" : 2.5,
+    "0x1a00" : 2.6,
+    "0x1b00" : 2.7,
+    "0x1c00" : 2.8,
+    "0x1d00" : 2.9,
+}
+
 # Linux dvfs policies: https://www.kernel.org/doc/Documentation/cpu-freq/governors.txt
-policies = ["ondemand", "conservative", "performance", "schedutil", "powersave"]
+policies = ["ondemand", "conservative", "performance", "schedutil", "powersave", "userspace"]
 
 # total time to run for, in ms
-times = [300000]
+times = [300000, 600000]
 
 # diff flink rates
-rates = [i for i in range(100,2100,100)] #2100 because python excludes last value.
+rates = [i for i in range(100000,2100000,10000)] #2100 because python excludes last value.
 
 # number of mappers
 mappers = [16] #[4,8,12,16,20]
@@ -27,9 +50,10 @@ mappers = [16] #[4,8,12,16,20]
 sleepStates = ["", "disabled_"]
 
 # not exploring different combo for these yet
-itrs = [1]
-dvfss = [1]
-sources = [1] #[16, 20] # num of sources
+itrs = [1, 2, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
+dvfss = ['1', '0c00', '0d00', '0e00', '0f00', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700', '1800', '1900', '1a00']
+#dvfss = [1, 0c00, 0d00, 0e00, 0f00, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 1a00]
+sources = [1, 16] #[16, 20] # num of sources
 sinks = [16] #[16, 20] # num of sinks
 ncores = [16] #[16, 20] # num of physical cores to use
 
@@ -101,8 +125,11 @@ def parseFile(loc, rate, itr, dvfs, policy, i, mapper, timems, sleepdisable):
     df_dict['i'].append(i)
     df_dict['itr'].append(itr)
     df_dict['nmappers'].append(mapper)
-    
-    df_dict['dvfs'].append(dvfs)
+
+    if '0x'+str(dvfs) in dvfs_dict:
+        df_dict['dvfs'].append(dvfs_dict['0x'+str(dvfs)])
+    else:
+        df_dict['dvfs'].append(dvfs)
     
     df_dict['policy'].append(policy)
     df_dict['rate'].append(rate)
