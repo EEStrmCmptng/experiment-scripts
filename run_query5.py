@@ -398,8 +398,42 @@ def generate_varying_rates(RATE_TYPE, FLINKRATE):
     print(f"Final Rate is: {FINAL_RATE}")
     return FINAL_RATE
 
+# set ITR configurations on victim node
+# dynamic ITR = 1
+# HOWTO check ITR value: ssh 192.168.1.11 /app/ethtool-4.5/ethtool -c eth0
+def setITR(v):
+    global GITR
+    print(" -------------------- setITR on victim --------------------")
+    ieth = runRemoteCommandGet("ifconfig | grep -B1 10.10.1 | grep -o '^\w*'", victim).decode()
+    print(f"ssh {victim} ethtool -C {ieth} rx-usecs {v}")
+    runcmd(f"ssh {victim} ethtool -C {ieth} rx-usecs {v}")
+    time.sleep(1)
+    runcmd(f"ssh {victim} ethtool -c {ieth}")
+    print("")
+
+# HOWTO check DVFS policy: ssh 192.168.1.11 /app/perf/display_dvfs_governors.sh
+def setDVFS(s):
+    global GDVFS, GPOLICY
+
+    if GDVFS == "1":
+        # existing policies
+        runcmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh {GPOLICY}")
+    else:
+        runcmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh userspace")
+        v = "0x10000"+s
+        print(" -------------------- setDVFS on victim --------------------")
+        runcmd('ssh ' + victim + ' "sudo wrmsr -a 0x199 ' + v + '"')
+        time.sleep(0.5)
+        print('ssh ' + victim + ' "sudo wrmsr -a 0x199 ' + v + '"')
+        # print CPU frequency across all cores
+        runcmd('ssh ' + victim + ' "sudo rdmsr -a 0x199"')
+        print("")
+        
 def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, FLINKRATETYPE, BUFFTIMEOUT):
     global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER, GWINDOWLENGTH, GCPENABLED, GCPINTERVAL, GCPMODE, GCPROCKSDBENABLED
+
+    setITR(ITR)
+    setDVFS(DVFS)
 
     FLINKRATE_ORIG = FLINKRATE
     rate_modified_flag = False
