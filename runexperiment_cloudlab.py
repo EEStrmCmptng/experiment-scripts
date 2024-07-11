@@ -202,11 +202,11 @@ def setDVFS(s):
         runcmd(f"ssh {victim} ~/experiment-scripts/cloudlab_setup/c6220/set_dvfs.sh userspace")
         v = "0x10000"+s
         print(" -------------------- setDVFS on victim --------------------")
-        runcmd('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
+        runcmd('ssh ' + victim + ' "sudo wrmsr -a 0x199 ' + v + '"')
         time.sleep(0.5)
-        print('ssh ' + victim + ' "wrmsr -a 0x199 ' + v + '"')
+        print('ssh ' + victim + ' "sudo wrmsr -a 0x199 ' + v + '"')
         # print CPU frequency across all cores
-        runcmd('ssh ' + victim + ' "rdmsr -a 0x199"')
+        runcmd('ssh ' + victim + ' "sudo rdmsr -a 0x199"')
         print("")
     
     '''
