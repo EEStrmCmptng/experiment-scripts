@@ -9,31 +9,52 @@ from os import path
 import sys
 import time
 
+# DVFS to CPU frequency map
+dvfs_dict = {
+    "0x1" : 1,
+    "0x0c00" :  1.2,
+    "0x0d00" :  1.3,
+    "0x0e00" :  1.4,
+    "0x0f00" :  1.5,
+    "0x1000" : 1.6,
+    "0x1100" : 1.7,
+    "0x1200" : 1.8,
+    "0x1300" : 1.9,
+    "0x1400" : 2.0,
+    "0x1500" : 2.1,
+    "0x1600" : 2.2,
+    "0x1700" : 2.3,
+    "0x1800" : 2.4,
+    "0x1900" : 2.5,
+    "0x1a00" : 2.6,
+    "0x1b00" : 2.7,
+    "0x1c00" : 2.8,
+    "0x1d00" : 2.9,
+}
+
 # Linux dvfs policies: https://www.kernel.org/doc/Documentation/cpu-freq/governors.txt
-policies = ["ondemand"]
+policies = ["ondemand", "conservative", "performance", "schedutil", "powersave", "userspace"]
 
 # total time to run for, in ms
-times = [600000]
+times = [300000, 600000]
 
 # diff flink rates
-rates = [1000, 2000, 3000, 4000, 8000, 16000, 32000, 100000, 200000, 300000, 600000, 1000000]
-
-# number of windows
-windows = [4, 12]
+rates = [i for i in range(100000,2100000,10000)] #2100 because python excludes last value.
 
 # window lengths
 windowlen = [5, 20, 60]
 
 # not exploring different combo for these yet
-itrs = [1]
-dvfss = [1]
+itrs = [1, 2, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
+dvfss = ['1', '0c00', '0d00', '0e00', '0f00', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700', '1800', '1900', '1a00']
 sources = [1] # num of sources
-sinks = [8, 16] # num of sinks
+windows = [16] # number of windows
+sinks = [16] # num of sinks
 ncores = [16] # num of physical cores to use
 
 df_dict = {
     'i': [], 'itr': [], 'dvfs': [], 'rate': [], 'policy': [], 'nwindows':[],
-    'watts_avg': [], 'watts_std': [],
+    'pkg_watts_avg': [], 'pkg_watts_std': [], 'ram_watts_avg': [], 'ram_watts_std':[],
     
     'pollCnt': [], 'c1Cnt': [], 'c1eCnt': [],'c3Cnt': [], 'c6Cnt': [], 
     'rxPackets': [], 'rxBytes': [], 'txPackets': [], 'txBytes': [],
@@ -66,7 +87,7 @@ def resetdf():
     global df_dict
     df_dict = {
     'i': [], 'itr': [], 'dvfs': [], 'rate': [], 'policy': [], 'nwindows':[],
-    'watts_avg': [], 'watts_std': [],
+    'pkg_watts_avg': [], 'pkg_watts_std': [], 'ram_watts_avg': [], 'ram_watts_std':[],
     
     'SinknumRecordsInPerSecond_avg': [], 'SinknumRecordsInPerSecond_std': [], 
     'SinknumRecordsOutPerSecond_avg': [], 'SinknumRecordsOutPerSecond_std': [], 
@@ -95,7 +116,10 @@ def parseFile(loc, rate, itr, dvfs, policy, i, window, timems, windowlength):
     df_dict['itr'].append(itr)
     df_dict['nwindows'].append(window)
 
-    df_dict['dvfs'].append(dvfs)
+    if '0x'+str(dvfs) in dvfs_dict:
+        df_dict['dvfs'].append(dvfs_dict['0x'+str(dvfs)])
+    else:
+        df_dict['dvfs'].append(dvfs)
 
     df_dict['policy'].append(policy)
     df_dict['rate'].append(rate)
@@ -125,18 +149,23 @@ def parseFile(loc, rate, itr, dvfs, policy, i, window, timems, windowlength):
 
     # server2_rapl.log collects Power (energy/second) data
     jfile = f"{loc}/rapl.log"
+    print(jfile)
     with open(jfile) as file:
-        lines = [float(line.split(' ')[0]) for line in file]
-        
+        lines = [line.rstrip() for line in file]
         # extract values from 40%-80% of total time to account for warmup time and capture region of compute
         time_in_secs = timems/1000
         stime = int(time_in_secs * 0.4)
         etime = int(time_in_secs * 0.8)
-
+        split_lines = [line.split() for line in lines]
+        pkg_vals = [float(val[0]) for val in split_lines]
+        ram_vals = [float(val[1]) for val in split_lines]        
         # get the average Power within this timeslot
-        df_dict['watts_avg'].append(float(round(np.mean(lines[stime:etime]), 2)))
-        df_dict['watts_std'].append(float(round(np.std(lines[stime:etime]), 2)))
+        df_dict['pkg_watts_avg'].append(float(round(np.mean(pkg_vals[stime:etime]), 2)))
+        df_dict['pkg_watts_std'].append(float(round(np.std(pkg_vals[stime:etime]), 2)))
         
+        df_dict['ram_watts_avg'].append(float(round(np.mean(ram_vals[stime:etime]), 2)))
+        df_dict['ram_watts_std'].append(float(round(np.std(ram_vals[stime:etime]), 2)))
+                
 def parse(loc1, name, ratetype, checkpointinginterval, checkpointingmode, rocksdbstatebackendenabled):
     nrepeat = 3
     resetdf()
