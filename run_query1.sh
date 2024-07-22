@@ -41,9 +41,56 @@ echo "[INFO] Input: BUFF ${BUFF}"
 echo "[INFO] Input: NCORES ${NCORES}"
 echo "[INFO] Input: IPMAPPER ${IPMAPPER}"
 echo "[INFO] Input: MCFG ${MCFG}"
-echo "[INFO] Input: NSOURCES ${NSOURCES}"
-echo "[INFO] Input: NMAPPERS ${NMAPPERS}"
-echo "[INFO] Input: NSINKS ${NSINKS}"
+
+function cleanLogs {
+    rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+    ssh ${IPSOURCE} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+    ssh ${IPMAPPER} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+    ssh ${IPSINK} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+}
+
+function BO {
+    for cfg in $MCFG; do
+	nsrc=$(echo $cfg | cut -d ";" -f 1)
+	nmapper=$(echo $cfg | cut -d ";" -f 2)
+	nsink=$(echo $cfg | cut -d ";" -f 3)
+
+	rm flink-cfg/schedulercfg
+	for t in `seq 1 1 $nsrc`; do
+	    echo "Source; ${IPSOURCE}" >> flink-cfg/schedulercfg
+	done
+	for t in `seq 1 1 $nmapper`; do
+	    echo "Mapper; ${IPMAPPER}" >> flink-cfg/schedulercfg
+	done
+	for t in `seq 1 1 $nsink`; do
+	    echo "Sink; ${IPSINK}" >> flink-cfg/schedulercfg
+	done		
+	
+	for fr in $FLINK_RATE; do
+	    for pol in $MPOLICY; do
+		echo "[INFO] python runBO.py --query ${MQUERY} --runcmd stopflink"
+		python runBO.py --query ${MQUERY} --runcmd stopflink
+
+		echo "[INFO] python runBO.py --query ${MQUERY} --runcmd startflink"
+		python runBO.py --query ${MQUERY} --runcmd startflink
+		
+		echo "[INFO] Run Experiment"
+		echo "🟢 [INFO] python -u runBO.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢"
+		cleanLogs
+		ssh ${IPMAPPER} sudo systemctl stop rapl_log
+		ssh ${IPMAPPER} sudo rm /tmp/rapl.log
+		ssh ${IPMAPPER} sudo systemctl restart rapl_log
+		sleep 1
+		python -u runBO.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+		sleep 1			    
+		ssh ${IPMAPPER} sudo systemctl stop rapl_log
+ 		loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+ 		scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
+ 		echo "[INFO] FINISHED"
+	    done
+	done
+    done    
+}
 
 function dynamic {
     for cfg in $MCFG; do
