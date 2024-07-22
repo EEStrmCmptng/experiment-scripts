@@ -48,7 +48,7 @@ windowlen = [5, 20, 60]
 itrs = [1, 2, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
 dvfss = ['1', '0c00', '0d00', '0e00', '0f00', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700', '1800', '1900', '1a00']
 sources = [1] # num of sources
-windows = [16] # number of windows
+windows = [8, 16] # number of windows
 sinks = [16] # num of sinks
 ncores = [16] # num of physical cores to use
 

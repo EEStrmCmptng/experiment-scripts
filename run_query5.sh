@@ -5,10 +5,11 @@ currdate=$(date +%m_%d_%Y_%H_%M_%S)
 
 export BEGIN_ITER=${BEGIN_ITER:="0"}
 export NITERS=${NITERS:="0"}
-export MDVFS=${MDVFS:="0c00 0d00 0e00 0f00 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 1a00"}
+#export MDVFS=${MDVFS:="0c00 0d00 0e00 0f00 1000 1100 1200 1300 1400 1500 1600 1700 1800 1900 1a00"}
+export MDVFS=${MDVFS:="0c00 0e00 1000 1200 1400 1600 1800 1a00"}
 #export MDVFS=${MDVFS:="1"}
 #export ITRS=${ITRS:="1"}
-export ITRS=${ITRS:="2 50 100 150 200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000"}
+export ITRS=${ITRS:="2 100 200 300 400 500 600 700 800 900 1000"}
 export FLINK_RATE=${FLINK_RATE:="200000_600000"} # 200K records-per-second for 600000 milliseconds or 10 minutes
 export BUFF=${BUFF:="-1"}
 export FLINK_RATE_TYPE=${FLINK_RATE_TYPE:="static"} # Set rate type to static, predictable or spiking
