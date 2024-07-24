@@ -8,6 +8,12 @@ import subprocess
 from subprocess import Popen, PIPE, call
 import json
 import yaml
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s | %(levelname)-6s | %(name)-40s || %(message)s',
+                    datefmt='%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
 
 dvfs_dict = {
     "0x0c00" : 1.2,
@@ -210,7 +216,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
 
     clock=_clock
     #jstackCount=0
-    print("starting...")
+    logger.info("starting...")
     while(clock>0):
         print("clock", clock, "-------------------------------------------------------------")
         arrout=[]
@@ -239,14 +245,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                         d = yaml.load(t_opsout[1:-1], Loader=yaml.FullLoader)
                         if d != None:
                             arrout.append(float(d['value']))
-                            #print(d['id'], float(d['value']))
-                        
-                        #print(t_opsout)
-                        #print(t_opsout[0])
-                        #print(t_opsout[0]['id'], t_opsout[0]['value'])
-                        #Source: Bids Source [{'id': '0.numRecordsOutPerSecond', 'value': '48333.333333333336'}]
-                        #print("[INFO]", job_id, vid, tid+'.numRecordsOutPerSecond', vname, t_opsout)
-        print(f"[INFO] SourceRecordsOut Mean {np.mean(arrout)}")
+        logger.info(f"SourceRecordsOut Mean {np.mean(arrout)}")
         time.sleep(interval)          
         clock-=interval
 
