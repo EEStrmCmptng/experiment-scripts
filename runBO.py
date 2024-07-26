@@ -48,8 +48,8 @@ CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[1
 bootstrap='10.10.1.1'   # jobmanager
 victim='10.10.1.3'       # scp logs from victim to bootstrap
 #jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
-jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
-#jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
+#jarpath='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
+jarpath='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
 #jarpath='./flink-benchmarks/target/Query5-jar-with-dependencies.jar'
 
 jmip=bootstrap
@@ -227,26 +227,34 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                 res=requests.get(jvurl).json()
                 vts=str(res['now'])
                 vname=res['name']
-                vpall=str(res['parallelism'])
-                if "Source" in vname:
-                    for vtask in res['subtasks']:
-                        ttm=vtask['taskmanager-id']
-                        tid=str(vtask['subtask'])
-                        #t_duration=str([{'id':'duration','value':vtask['duration']}])
-                        #t_rbytes=str([{'id':'read-bytes','value':vtask['metrics']['read-bytes']}])
-                        #t_wbytes=str([{'id':'write-bytes','value':vtask['metrics']['write-bytes']}])
-                        #t_rrec=str([{'id':'read-records','value':vtask['metrics']['read-records']}])
-                        #t_wrec=str([{'id':'write-records','value':vtask['metrics']['write-records']}])
-                        #t_busytime=get_task_metrics_details(job_id, vid, tid+'.busyTimeMsPerSecond')
-                        #t_backpressure=get_task_metrics_details(job_id, vid, tid+'.backPressuredTimeMsPerSecond')
-                        #t_idletime=get_task_metrics_details(job_id, vid, tid+'.idleTimeMsPerSecond')
-                        #t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
-                        t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
+                vpall=str(res['parallelism'])                
+                for vtask in res['subtasks']:
+                    ttm=vtask['taskmanager-id']
+                    tid=str(vtask['subtask'])
+                    t_duration=str([{'id':'duration','value':vtask['duration']}])
+                    t_rbytes=str([{'id':'read-bytes','value':vtask['metrics']['read-bytes']}])
+                    t_wbytes=str([{'id':'write-bytes','value':vtask['metrics']['write-bytes']}])
+                    t_rrec=str([{'id':'read-records','value':vtask['metrics']['read-records']}])
+                    t_wrec=str([{'id':'write-records','value':vtask['metrics']['write-records']}])
+                    t_busytime=get_task_metrics_details(job_id, vid, tid+'.busyTimeMsPerSecond')
+                    t_backpressure=get_task_metrics_details(job_id, vid, tid+'.backPressuredTimeMsPerSecond')
+                    t_idletime=get_task_metrics_details(job_id, vid, tid+'.idleTimeMsPerSecond')
+                    t_opsin=get_task_metrics_details(job_id, vid, tid+'.numRecordsInPerSecond')
+                    t_opsout=get_task_metrics_details(job_id, vid, tid+'.numRecordsOutPerSecond')
+                    
+                    ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
+                    ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
+
+                    if "Source" in vname:
                         d = yaml.load(t_opsout[1:-1], Loader=yaml.FullLoader)
                         if d != None:
                             arrout.append(float(d['value']))
-        logger.info(f"SourceRecordsOut Mean {np.mean(arrout)}")
-        time.sleep(interval)          
+
+        avgSrcOut = round(float(np.mean(arrout)), 2)
+        logger.info(f"SourceRecordsOutAvg == {avgSrcOut}")
+        ff=open(flinklogdir+'/SourceRecordsOutAvg.log', 'a')
+        ff.write(str(avgSrcOut)+'\n')
+        time.sleep(interval)
         clock-=interval
 
 def parseFlinkLatency(filename):
@@ -356,10 +364,10 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISAB
     jar_id = ur['filename'].split('/')[-1]
     
     ## for query1 only
-    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'blurstep': 2})
+    #job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'p-map': GMAPPER, 'p-source': GSOURCE, 'p-sink': GSINK, 'blurstep': 2})
 
     ## for imgproc only
-    #job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'pmap': GMAPPER, 'psrc': GSOURCE, 'psink': GSINK, 'blurstep': 2, 'batchSize': 1})
+    job_id = rest_client.jars.run(jar_id, arguments={'ratelist': FLINKRATE, 'bufferTimeout': BUFFTIMEOUT, 'pmap': GMAPPER, 'psrc': GSOURCE, 'psink': GSINK, 'blurstep': 2, 'batchSize': 1})
     job_id = rest_client.jobs.all()[0]['id']
     job = rest_client.jobs.get(job_id=job_id)
     print(f"Deployed job id={job_id}. Sleeping 30 seconds before getting logs ..." )
