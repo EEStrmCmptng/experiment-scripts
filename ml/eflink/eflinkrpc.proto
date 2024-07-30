@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+service UtilityMessaging {
+  rpc PublishUtility(UtilityMessage) returns (UtilityAck) {}
+}
+
+message UtilityMessage {
+  float srcrps = 1;
+  float power = 2;
+}
+
+message UtilityAck {
+  int32 retcode = 1;
+}
