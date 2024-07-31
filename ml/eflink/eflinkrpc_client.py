@@ -11,11 +11,27 @@ from subprocess import Popen, PIPE, call
 DEFAULT_IP = 'localhost'
 DEFAULT_PORT = 10000
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s | %(levelname)-6s | %(name)-40s || %(message)s',
-                    datefmt='%m-%d %H:%M:%S')
-logger = logging.getLogger(__name__)
+#logging.basicConfig(level=logging.INFO,
+#                    format='%(asctime)s | %(levelname)-6s | %(name)-40s || %(message)s',
+#                    datefmt='%m-%d %H:%M:%S')
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+# create file handler which logs even debug messages
+fh = logging.FileHandler(f"client.log")
+fh.setLevel(logging.INFO)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s | %(levelname)-6s | %(name)-40s || %(message)s',
+                            datefmt='%m-%d %H:%M:%S')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 def runGetCmd(cmd):
     #print('------------------------------------------------------------')

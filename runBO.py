@@ -207,7 +207,7 @@ def getITRlogs(KWD, cores, itrlogsdir, NREPEAT):
         runcmd(gcmd)
 
 # get Flink logs 
-def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
+def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval, rate):
     global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB
     
     tmid=[]
@@ -251,9 +251,11 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                             arrout.append(float(d['value']))
 
         avgSrcOut = round(float(np.mean(arrout)), 2)
-        logger.info(f"SourceRecordsOutAvg == {avgSrcOut}")
+        percentSrcOut = avgSrcOut/rate
+        #1.0-(df_comb['SourcenumRecordsOutPerSecond_avg']/df_comb['rate'])
+        logger.info(f"SourceRecordsOutAvg == {avgSrcOut}, {percentSrcOut}, {rate}")
         ff=open(flinklogdir+'/SourceRecordsOutAvg.log', 'a')
-        ff.write(str(avgSrcOut)+'\n')
+        ff.write(str(percentSrcOut)+'\n')
         time.sleep(interval)
         clock-=interval
 
@@ -373,7 +375,7 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISAB
     print(f"Deployed job id={job_id}. Sleeping 30 seconds before getting logs ..." )
     time.sleep(30)
 
-    getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur , 10)    # run _flinkdur sec, and record metrics every 10 sec
+    getFlinkLog(KWD, rest_client, job_id, flinklogdir, _flinkdur, 10, float(FLINKRATE.split('_')[0]))    # run _flinkdur sec, and record metrics every 10 sec
     
     """
     # get ITR log + flink log    
