@@ -35,10 +35,12 @@ FLINKROOT='~/experiment-scripts/flink-simplified'
 #print(FLINKROOT)
 MAXCORES=16    # num of cores. 16C32T
 CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[10,26],[11,27],[12,28],[13,29],[14,30],[15,31]]
+SERVERIPS = ['10.10.1.2', '10.10.1.3', '10.10.1.4']
 
 # the script will run on bootstrap
 bootstrap='10.10.1.1'   # jobmanager
 victim='10.10.1.3'       # scp logs from victim to bootstrap
+
 #jarpath='./flink-benchmarks/target/Query1-jar-with-dependencies.jar'
 jarpath_q1='./flink-benchmarks/target/Query1tsc-jar-with-dependencies.jar'
 jarpath_imgproc='./flink-benchmarks/target/Imgproc-jar-with-dependencies.jar'
@@ -80,8 +82,10 @@ def stopflink():
     print("cd "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/bin/ ; ./stop-cluster.sh")
     print(os.popen("cd "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/bin/ ; ./stop-cluster.sh").read())
     #print(os.popen("rm -rf "+FLINKROOT+"/flinkstate/*").read())
-    print("stopped flink")
-
+    runcmd(f"pkill java")
+    for s in SERVERIPS:
+        runcmd(f"ssh {s} pkill java")
+    print("stopped flink")    
 
 def startflink():
     localip=os.popen("hostname -I").read()
@@ -518,7 +522,6 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISAB
     elif GQUERY == "imgproc":
         ur = upload_jar(jarpath_imgproc)
     jar_id = ur['filename'].split('/')[-1]
-
 
     if GQUERY == "query1":
         ## for query1 only
