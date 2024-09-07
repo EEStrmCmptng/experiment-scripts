@@ -7,6 +7,7 @@ import traceback
 import subprocess
 import math, random
 from subprocess import Popen, PIPE, call
+import yaml
 
 ROOTDIR=os.path.dirname(os.getcwd())
 # FLINKROOT=os.path.dirname(os.getcwd())+'/flink-simplified'
@@ -14,6 +15,7 @@ FLINKROOT='~/experiment-scripts/flink-simplified'
 # print(FLINKROOT)
 MAXCORES=16    # num of cores. 16C32T
 CPUIDS=[[0,16],[1,17],[2,18],[3,19],[4,20],[5,21],[6,22],[7,23],[8,24],[9,25],[10,26],[11,27],[12,28],[13,29],[14,30],[15,31]]
+SERVERIPS = ['10.10.1.2', '10.10.1.3', '10.10.1.4']
 
 # the script will run on bootstrap
 bootstrap='10.10.1.1'   # jobmanager
@@ -79,6 +81,11 @@ def stopflink():
     print("cd "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/bin/ ; ./stop-cluster.sh")
     print(os.popen("cd "+FLINKROOT+"/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/bin/ ; ./stop-cluster.sh").read())
     #print(os.popen("rm -rf "+FLINKROOT+"/flinkstate/*").read())
+    runcmd(f"pkill java")
+    for s in SERVERIPS:
+        runcmd(f"ssh {s} pkill java")
+    print("stopped flink")    
+
     print("stopped flink")
 
 def startflink():
@@ -186,6 +193,7 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
 
     clock=_clock
     print("starting...")
+    arrout=[]
     while(clock>0):
         print("clock", clock, "-------------------------------------------------------------")
         if(interval!=-1):
@@ -214,7 +222,12 @@ def getFlinkLog(KWD, rest_client, job_id, flinklogdir, _clock, interval):
                     
                     ff=open(flinklogdir+'/Operator_'+vname+'_'+tid, 'a')
                     ff.write(vts +'; '+ vname +'; '+ vpall +'; '+ ttm +'; '+ tid +'; '+ t_busytime +'; '+ t_backpressure +'; '+ t_idletime +'; '+ t_opsin +'; '+ t_opsout+'; '+t_duration+'; '+t_rbytes+'; '+t_wbytes+'; '+t_rrec+'; '+t_wrec+'  \n')
-        
+                    if "Source" in vname:
+                        d = yaml.load(t_opsout[1:-1], Loader=yaml.FullLoader)
+                        if d != None:
+                            arrout.append(float(d['value']))
+        avgSrcOut = round(float(np.mean(arrout)), 2)
+        print(f"SourceRecordsOutAvg == {avgSrcOut}")
         time.sleep(interval)     
         clock-=interval
 
