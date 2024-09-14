@@ -33,22 +33,29 @@ dvfs_dict = {
 }
 
 # Linux dvfs policies: https://www.kernel.org/doc/Documentation/cpu-freq/governors.txt
-policies = ["ondemand", "conservative", "performance", "schedutil", "powersave", "userspace"]
+#policies = ["ondemand", "conservative", "performance", "schedutil", "powersave", "userspace"]
+policies = ["ondemand", "userspace"]
 
 # total time to run for, in ms
 times = [300000, 600000]
 
 # diff flink rates
-rates = [i for i in range(100000,2100000,10000)] #2100 because python excludes last value.
+#rates = [i for i in range(100000,2100000,10000)] #2100 because python excludes last value.
+#rates = [i for i in range(1000,50000,1000)] #2100 because python excludes last value.
+#rates = [2000, 4000]
+rates = [6000, 12000, 18000, 24000]
+#rates = [i for i in range(10000,200000,10000)] #2100 because python excludes last value.
 
 # window lengths
-windowlen = [5, 20, 60]
+windowlen = [20, 60]
 
 # not exploring different combo for these yet
-itrs = [1, 2, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
-dvfss = ['1', '0c00', '0d00', '0e00', '0f00', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700', '1800', '1900', '1a00']
+#itrs = [1, 2, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000]
+#dvfss = ['1', '0c00', '0d00', '0e00', '0f00', '1000', '1100', '1200', '1300', '1400', '1500', '1600', '1700', '1800', '1900', '1a00']
+itrs = [1]
+dvfss = ['1']
 sources = [1] # num of sources
-windows = [8, 16] # number of windows
+windows = [4, 8, 12, 16] # number of windows
 sinks = [16] # num of sinks
 ncores = [16] # num of physical cores to use
 
@@ -86,36 +93,38 @@ print("*****************************************************************")
 def resetdf():
     global df_dict
     df_dict = {
-    'i': [], 'itr': [], 'dvfs': [], 'rate': [], 'policy': [], 'nwindows':[],
-    'pkg_watts_avg': [], 'pkg_watts_std': [], 'ram_watts_avg': [], 'ram_watts_std':[],
-    
-    'SinknumRecordsInPerSecond_avg': [], 'SinknumRecordsInPerSecond_std': [], 
-    'SinknumRecordsOutPerSecond_avg': [], 'SinknumRecordsOutPerSecond_std': [], 
-    'SinkbusyTimeMsPerSecond_avg': [], 'SinkbusyTimeMsPerSecond_std': [], 
-    'SinkbackPressuredTimeMsPerSecond_avg': [], 'SinkbackPressuredTimeMsPerSecond_std': [], 
-    'SinkbusyTime_%': [], 'SinkbackPressuredTime_%': [], 
-
-    'SourcenumRecordsInPerSecond_avg': [], 'SourcenumRecordsInPerSecond_std': [], 
-    'SourcenumRecordsOutPerSecond_avg': [], 'SourcenumRecordsOutPerSecond_std': [], 
-    'SourcebusyTimeMsPerSecond_avg': [], 'SourcebusyTimeMsPerSecond_std': [], 
-    'SourcebackPressuredTimeMsPerSecond_avg': [], 'SourcebackPressuredTimeMsPerSecond_std': [], 
-    'SourcebusyTime_%': [], 'SourcebackPressuredTime_%': [], 
-
-    'WindownumRecordsInPerSecond_avg': [], 
-    'WindownumRecordsInPerSecond_std': [], 'WindownumRecordsOutPerSecond_avg': [], 
-    'WindownumRecordsOutPerSecond_std': [], 'WindowbusyTimeMsPerSecond_avg': [], 
-    'WindowbusyTimeMsPerSecond_std': [], 'WindowbackPressuredTimeMsPerSecond_avg': [], 
-    'WindowbackPressuredTimeMsPerSecond_std': [],
-    'WindowbusyTime_%': [], 'WindowbackPressuredTime_%': [], 'Windowlength': []
+        'i': [], 'itr': [], 'dvfs': [], 'rate': [], 'policy': [], 'nwindows':[], 'CheckpointInterval': [], 'CheckpointMode': [],
+        'pkg_watts_avg': [], 'pkg_watts_std': [], 'ram_watts_avg': [], 'ram_watts_std':[],
+        
+        'SinknumRecordsInPerSecond_avg': [], 'SinknumRecordsInPerSecond_std': [], 
+        'SinknumRecordsOutPerSecond_avg': [], 'SinknumRecordsOutPerSecond_std': [], 
+        'SinkbusyTimeMsPerSecond_avg': [], 'SinkbusyTimeMsPerSecond_std': [], 
+        'SinkbackPressuredTimeMsPerSecond_avg': [], 'SinkbackPressuredTimeMsPerSecond_std': [], 
+        'SinkbusyTime_%': [], 'SinkbackPressuredTime_%': [], 
+        
+        'SourcenumRecordsInPerSecond_avg': [], 'SourcenumRecordsInPerSecond_std': [], 
+        'SourcenumRecordsOutPerSecond_avg': [], 'SourcenumRecordsOutPerSecond_std': [], 
+        'SourcebusyTimeMsPerSecond_avg': [], 'SourcebusyTimeMsPerSecond_std': [], 
+        'SourcebackPressuredTimeMsPerSecond_avg': [], 'SourcebackPressuredTimeMsPerSecond_std': [], 
+        'SourcebusyTime_%': [], 'SourcebackPressuredTime_%': [], 
+        
+        'WindownumRecordsInPerSecond_avg': [], 
+        'WindownumRecordsInPerSecond_std': [], 'WindownumRecordsOutPerSecond_avg': [], 
+        'WindownumRecordsOutPerSecond_std': [], 'WindowbusyTimeMsPerSecond_avg': [], 
+        'WindowbusyTimeMsPerSecond_std': [], 'WindowbackPressuredTimeMsPerSecond_avg': [], 
+        'WindowbackPressuredTimeMsPerSecond_std': [],
+        'WindowbusyTime_%': [], 'WindowbackPressuredTime_%': [], 'Windowlength': []
     }
 
-def parseFile(loc, rate, itr, dvfs, policy, i, window, timems, windowlength):
+def parseFile(loc, rate, itr, dvfs, policy, i, window, timems, windowlength, cpinterval, cpmode):
     file=f"{loc}/summary.csv"
 
     df_dict['i'].append(i)
     df_dict['itr'].append(itr)
     df_dict['nwindows'].append(window)
-
+    df_dict['CheckpointInterval'].append(cpinterval)
+    df_dict['CheckpointMode'].append(cpmode)
+    
     if '0x'+str(dvfs) in dvfs_dict:
         df_dict['dvfs'].append(dvfs_dict['0x'+str(dvfs)])
     else:
@@ -167,7 +176,7 @@ def parseFile(loc, rate, itr, dvfs, policy, i, window, timems, windowlength):
         df_dict['ram_watts_std'].append(float(round(np.std(ram_vals[stime:etime]), 2)))
                 
 def parse(loc1, name, ratetype, checkpointinginterval, checkpointingmode, rocksdbstatebackendenabled):
-    nrepeat = 3
+    nrepeat = 1
     resetdf()
     # print(df_dict)
 
@@ -179,28 +188,36 @@ def parse(loc1, name, ratetype, checkpointinginterval, checkpointingmode, rocksd
         policy, rate, timems, itr, dvfs, window, cores, source, sink, windowlength = combo
         combined_file_name = f"{loc1}/combined_{rate}_{ratetype}"
         loc  = f"{loc1}/{name}_cores{cores}_frate{rate}_{timems}_fratetype_{ratetype}_fbuff-1_itr{itr}_{policy}dvfs{dvfs}_source{source}_window{window}_sink{sink}_windowlength{windowlength}"
+
+        #/users/hand32/dataset/micro/query5/different_checkpoint/rocksdb/windowlength20/data/query5_cores16_frate18000_300000_fratetype_static_fbuff-1_itr750_ondemanddvfs1100_source1_window12_sink16_windowlength60_cpint5000_cpmode_exactly_once_cpbckend_rocksdb_repeat0
         
+        #query5_cores16_frate6000_300000_fratetype_static_fbuff-1_itr1_ondemanddvfs1_source1_window8_sink16_windowlength20_cpint5000_cpmode_atleast_once_cpbckend_rocksdb_repeat0
+        cpinterval=-1
+        cpmode="null"
         if checkpointinginterval:
-            loc = f"{loc}_cpint{checkpointinginterval}"
+            loc_i = f"{loc}_cpint{checkpointinginterval}"
             combined_file_name = f"{combined_file_name}_{checkpointinginterval}"
+            cpinterval = int(checkpointinginterval)
         if checkpointingmode:
-            loc = f"{loc}_cpmode_{checkpointingmode}"
+            loc_i = f"{loc_i}_cpmode_{checkpointingmode}"
             combined_file_name = f"{combined_file_name}_{checkpointingmode}"
+            cpmode = str(checkpointingmode)
         if rocksdbstatebackendenabled:
-            loc = f"{loc}_cpbckend_rocksdb"
+            loc_i = f"{loc_i}_cpbckend_rocksdb"
             combined_file_name = f"{combined_file_name}_rocksdb"
+            
         for i in range(nrepeat):
-            loc_i = f"{loc}_repeat{i}"
-            #print(f"[DEBUG] location: {loc}")
+            loc_i = f"{loc_i}_repeat{i}"
+            #print(f"[DEBUG] location: {loc_i}")
             if not path.exists(loc_i+ "/summary.csv"):
                 break
             print(loc_i)
-            parseFile(loc_i, rate, itr, dvfs, policy, i, window, timems, windowlength)
+            parseFile(loc_i, rate, itr, dvfs, policy, i, window, timems, windowlength, cpinterval, cpmode)
 
     # print(df_dict)
     dd1 = pd.DataFrame(df_dict)
     print(len(dd1.index))    
-    dd1.to_csv(f"{loc1}/combined.csv", mode='w')
+    dd1.to_csv(f"{loc1}/combined.csv", mode='a')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
