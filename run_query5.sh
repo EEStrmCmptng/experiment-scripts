@@ -24,7 +24,7 @@ export MPOLICY=${MPOLICY:="ondemand"} # Other policies: conservative powersave p
 # Checkpointing
 export FLINK_CHECKPOINTING_ENABLED=${FLINK_CHECKPOINTING_ENABLED:="false"}
 export FLINK_CHECKPOINTING_INTERVAL=${FLINK_CHECKPOINTING_INTERVAL:="10000"}
-export FLINK_CHECKPOINTING_MODE=${FLINK_CHECKPOINTING_MODE:="exactly_once"}
+export FLINK_CHECKPOINTING_MODE=${FLINK_CHECKPOINTING_MODE:="exactly_once"}  # exactly_once, atleast_once
 export FLINK_ROCKSDB_STATE_BACKEND_ENABLED=${FLINK_ROCKSDB_STATE_BACKEND_ENABLED:="false"}
 
 # The assumption is we use 4 nodes that are identical in terms of hardware
@@ -69,6 +69,10 @@ function cleanLogs {
 	ssh ${IPSOURCE} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
 	ssh ${IPWINDOW} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
 	ssh ${IPSINK} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+
+	ssh ${IPSOURCE} rm -rf /tmp/flink-rpc-akka_*.jar
+	ssh ${IPWINDOW} rm -rf /tmp/flink-rpc-akka_*.jar
+	ssh ${IPSINK} rm -rf /tmp/flink-rpc-akka_*.jar
 }
 
 function dynamic {
@@ -152,6 +156,91 @@ function dynamic {
 	done
 }
 
+function checkpoints {
+    for cfg in $MCFG; do
+	echo $cfg
+	nsrc=$(echo $cfg | cut -d ";" -f 1)
+	nwindow=$(echo $cfg | cut -d ";" -f 2)
+	nsink=$(echo $cfg | cut -d ";" -f 3)
+	
+	rm flink-query5-cfg/schedulercfg
+	for t in $(seq 1 1 $nsrc); do
+	    echo "Source; ${IPSOURCE}" >> flink-query5-cfg/schedulercfg
+	done
+	for t in $(seq 1 1 $nwindow); do
+	    echo "Window; ${IPWINDOW}" >> flink-query5-cfg/schedulercfg
+	done
+	for t in $(seq 1 1 $nsink); do
+	    echo "Sink; ${IPSINK}" >> flink-query5-cfg/schedulercfg
+	done
+
+	for i in $(seq ${BEGIN_ITER} 1 $NITERS); do
+	    for fr in $FLINK_RATE; do
+		for pol in $MPOLICY; do
+		    for checkpoint_interval in $FLINK_CHECKPOINTING_INTERVAL; do
+			for checkpoint_mode in $FLINK_CHECKPOINTING_MODE; do
+			    # stops pre-existing flink cluster and cleans up state
+			    echo "[INFO] python runexperiment_cloudlab.py --query ${MQUERY} --runcmd stopflink"
+			    python run_query5.py --query ${MQUERY} --runcmd stopflink
+		    
+			    # starts flink cluster
+			    echo "[INFO] python run_query5.py --query ${MQUERY} --runcmd startflink"
+			    python run_query5.py --query ${MQUERY} --runcmd startflink
+			    
+			    # Doing a warmup run first
+			    python -u run_query5.py --flinkrate 666_6666 --flinkratetype ${FLINK_RATE_TYPE} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nwindow ${nwindow} --nsink ${nsink} --windowlength ${WINDOW_LENGTH} --checkpointingenabled ${FLINK_CHECKPOINTING_ENABLED} --checkpointinginterval ${checkpoint_interval} --checkpointingmode ${checkpoint_mode} --rocksdbstatebackendenabled ${FLINK_ROCKSDB_STATE_BACKEND_ENABLED}
+		    
+		    
+			    echo "[INFO] Run Experiment"
+			    echo "[INFO] python -u run_query5.py --flinkrate 666_6666 --flinkratetype ${FLINK_RATE_TYPE} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nwindow ${nwindow} --nsink ${nsink} --windowlength ${WINDOW_LENGTH} --checkpointingenabled ${FLINK_CHECKPOINTING_ENABLED} --checkpointinginterval ${checkpoint_interval} --checkpointingmode ${checkpoint_mode} --rocksdbstatebackendenabled ${FLINK_ROCKSDB_STATE_BACKEND_ENABLED}"
+			    
+			    cleanLogs
+			    
+			    # enable power logging
+			    ssh ${IPWINDOW} sudo systemctl stop rapl_log
+			    ssh ${IPWINDOW} sudo rm /tmp/rapl.log
+			    ssh ${IPWINDOW} sudo systemctl restart rapl_log
+			    
+			    # start logging CPU usage
+			    #ssh ${IPWINDOW} sudo rm -f /data/cpu.txt
+			    #ssh ${IPWINDOW} "sudo sar -u 15 > /data/cpu.txt 2>&1 < /dev/null &"
+		    
+			    python -u run_query5.py --flinkrate ${fr} --flinkratetype ${FLINK_RATE_TYPE} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nwindow ${nwindow} --nsink ${nsink} --windowlength ${WINDOW_LENGTH} --checkpointingenabled ${FLINK_CHECKPOINTING_ENABLED} --checkpointinginterval ${checkpoint_interval} --checkpointingmode ${checkpoint_mode} --rocksdbstatebackendenabled ${FLINK_ROCKSDB_STATE_BACKEND_ENABLED}
+		    
+			    # retrieve power data from window node
+			    ssh ${IPWINDOW} sudo systemctl stop rapl_log
+		    
+			    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fratetype_${FLINK_RATE_TYPE}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_window${nwindow}_sink${nsink}"
+			    
+		    
+			    if [ "$WINDOW_LENGTH" != "0" ]; then
+				loc="${loc}_windowlength${WINDOW_LENGTH}"
+			    fi
+			    
+			    if [[ "$FLINK_CHECKPOINTING_ENABLED" == "true" ]]; then
+				loc="${loc}_cpint${checkpoint_interval}_cpmode_${checkpoint_mode}"				    
+			    fi
+		    
+			    if [[ "$FLINK_ROCKSDB_STATE_BACKEND_ENABLED" == "true" ]]; then
+				loc="${loc}_cpbckend_rocksdb"
+			    fi
+			    
+			    loc="${loc}_repeat${i}"
+			    scp -r ${IPWINDOW}:/tmp/rapl.log ${loc}/rapl.log
+			    
+			    # Retrieve cpu usage from window node
+			    #ssh ${IPWINDOW} "sudo pkill -9 -f sar"
+			    #scp -r ${IPWINDOW}:/data/cpu.txt ${loc}/cpu.txt
+			    
+			    echo "[INFO] FINISHED"
+			done
+		    done
+		done
+	    done
+	done
+    done
+}
+
 function static {
     for cfg in $MCFG; do
 	echo $cfg
@@ -213,7 +302,7 @@ function static {
 			fi
 			
 			if [[ "$FLINK_CHECKPOINTING_ENABLED" == "true" ]]; then
-			    loc="${loc}_cpint${FLINK_CHECKPOINTING_INTERVAL}_cpmode_${FLINK_CHECKPOINTING_MODE}"				    
+			    loc="${loc}_cpint${FLINK_CHECKPOINTING_INTERVAL}_cpmode_${FLINK_CHECKPOINTING_MODE}"
 			fi
 
 			if [[ "$FLINK_ROCKSDB_STATE_BACKEND_ENABLED" == "true" ]]; then
@@ -222,7 +311,7 @@ function static {
 			
 			loc="${loc}_repeat${i}"
 			scp -r ${IPWINDOW}:/tmp/rapl.log ${loc}/rapl.log
-			scp -r $loc kd:/home/handong/sesadata/flink/query5_7_10_2024/
+			#scp -r $loc kd:/home/handong/sesadata/flink/query5_7_10_2024/
 			
 			# Retrieve cpu usage from window node
 			#ssh ${IPWINDOW} "sudo pkill -9 -f sar"
