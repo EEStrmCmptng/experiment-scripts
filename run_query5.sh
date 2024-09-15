@@ -66,13 +66,23 @@ echo "[INFO] Input: FLINK_ROCKSDB_STATE_BACKEND_ENABLED ${FLINK_ROCKSDB_STATE_BA
 
 function cleanLogs {
 	rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
+        rm -rf ~/flink-experiments/flink-simplified/flinkstate/*
+
 	ssh ${IPSOURCE} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
 	ssh ${IPWINDOW} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
 	ssh ${IPSINK} rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
 
-	ssh ${IPSOURCE} rm -rf /tmp/flink-rpc-akka_*.jar
-	ssh ${IPWINDOW} rm -rf /tmp/flink-rpc-akka_*.jar
-	ssh ${IPSINK} rm -rf /tmp/flink-rpc-akka_*.jar
+	ssh ${IPSOURCE} rm -rf /tmp/*.jar
+	ssh ${IPSOURCE} rm -rf /tmp/rocksdb-lib-*.jar
+	ssh ${IPSOURCE} rm -rf ~/flink-experiments/flink-simplified/flinkstate/*
+
+	ssh ${IPWINDOW} rm -rf /tmp/*.jar
+	ssh ${IPWINDOW} rm -rf /tmp/rocksdb-lib-*.jar
+	ssh ${IPWINDOW} rm -rf ~/flink-experiments/flink-simplified/flinkstate/*
+
+	ssh ${IPSINK} rm -rf /tmp/*.jar
+	ssh ${IPSINK} rm -rf /tmp/rocksdb-lib-*.jar
+	ssh ${IPSINK} rm -rf ~/flink-experiments/flink-simplified/flinkstate/*
 }
 
 function dynamic {
