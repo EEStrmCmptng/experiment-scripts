@@ -13,6 +13,7 @@ export MDVFS=${MDVFS:="0c00 0e00 1000 1200 1400 1600 1800 1a00"}
 export ITRS=${ITRS:="2 100 200 300 400 500 600 700 800 900 1000"}
 export FLINK_RATE=${FLINK_RATE:="200000_600000"} # 200K records-per-second for 10 minutes
 export BUFF=${BUFF:="-1"}
+export FLINK_RATE_TYPE=${FLINK_RATE_TYPE:="static"} # Set rate type to static, predictable or spiking
 
 export IPSINK=${IPSINK:="10.10.1.4"}
 export IPMAPPER=${IPMAPPER:="10.10.1.3"}
@@ -27,8 +28,8 @@ export MCFG=${MCFG:="$(nproc);4;$(nproc)"} # Sources; Mappers; Sinks
 
 # This is to ensure number of task slots is never less than the amount of cores
 # No work gets done by flink if taskmanager.numberOfTaskSlots <  max(Sources or Mappers or Sinks)
-#sed -i "s/taskmanager.numberOfTaskSlots:.*/taskmanager.numberOfTaskSlots: $(nproc)/" flink-cfg/flink-conf.yaml
-sed -i "s/taskmanager.numberOfTaskSlots:.*/taskmanager.numberOfTaskSlots: 64/" flink-cfg/flink-conf.yaml
+sed -i "s/taskmanager.numberOfTaskSlots:.*/taskmanager.numberOfTaskSlots: $(nproc)/" flink-cfg/flink-conf.yaml
+#sed -i "s/taskmanager.numberOfTaskSlots:.*/taskmanager.numberOfTaskSlots: 64/" flink-cfg/flink-conf.yaml
 
 echo "[INFO] START: ${currdate}"
 echo "[INFO] Input: MPOLICY ${MPOLICY}"
@@ -41,6 +42,7 @@ echo "[INFO] Input: BUFF ${BUFF}"
 echo "[INFO] Input: NCORES ${NCORES}"
 echo "[INFO] Input: IPMAPPER ${IPMAPPER}"
 echo "[INFO] Input: MCFG ${MCFG}"
+echo "[INFO] Input: FLINK_RATE_TYPE ${FLINK_RATE_TYPE}"
 
 function cleanLogs {
     rm -rf /users/$(whoami)/experiment-scripts/flink-simplified/flink-dist/target/flink-1.14.0-bin/flink-1.14.0/log/*.log*
@@ -81,8 +83,10 @@ function BO {
 		ssh ${IPMAPPER} sudo rm /tmp/rapl.log
 		ssh ${IPMAPPER} sudo systemctl restart rapl_log
 		sleep 1
+		
 		python -u runBO.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
-		sleep 1			    
+		
+		sleep 1
 		ssh ${IPMAPPER} sudo systemctl stop rapl_log
  		loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
  		scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
@@ -120,27 +124,32 @@ function dynamic {
 		    python runexperiment_cloudlab.py --query ${MQUERY} --runcmd startflink
 			    
 		    # Doing a warmup run first
-		    python -u runexperiment_cloudlab.py --flinkrate "666_6666" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
-		
+		    python -u runexperiment_cloudlab.py --flinkrate "666_6666" --flinkratetype "static" --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat 0 --cores ${NCORES} --query ${MQUERY} --policy "ondemand" --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+
+		    # experiment run
 		    echo "[INFO] Run Experiment"
-		    echo "🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢"
+		    echo "🟢 [INFO] python -u runexperiment_cloudlab.py --flinkrate ${fr} --flinkratetype ${FLINK_RATE_TYPE} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink} 🟢"
 
 		    cleanLogs			    
 		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
 		    ssh ${IPMAPPER} sudo rm /tmp/rapl.log
 		    ssh ${IPMAPPER} sudo systemctl restart rapl_log
 		    sleep 1
-		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+
+		    python -u runexperiment_cloudlab.py --flinkrate ${fr} --flinkratetype ${FLINK_RATE_TYPE} --bufftimeout -1 --itr 1 --dvfs 1 --nrepeat ${i} --cores ${NCORES} --query ${MQUERY} --policy ${pol} --nsource ${nsrc} --nmapper ${nmapper} --nsink ${nsink}
+		    
 		    sleep 1			    
 		    ssh ${IPMAPPER} sudo systemctl stop rapl_log
- 		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+ 		    loc="./logs/${MQUERY}_cores${NCORES}_frate${fr}_fratetype_${FLINK_RATE_TYPE}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i}"
+		    
  		    scp -r ${IPMAPPER}:/tmp/rapl.log ${loc}/rapl.log
-		    scp -r $loc kd:/home/handong/sesadata/flink/query1_7_3_2024/
- 		    echo "[INFO] FINISHED"
+		    #scp -r $loc kd:/home/handong/sesadata/flink/query1_7_3_2024/
+ 		    echo "[INFO] FIN ${MQUERY}_cores${NCORES}_frate${fr}_fratetype_${FLINK_RATE_TYPE}_fbuff-1_itr1_${pol}dvfs1_source${nsrc}_mapper${nmapper}_sink${nsink}_repeat${i} [INFO]"
 		done
 	    done
 	done    
     done
+    echo "[INFO] ALL FINISHED [INFO]"
 }
 
 function static {

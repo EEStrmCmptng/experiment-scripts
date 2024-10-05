@@ -5,6 +5,7 @@ import pandas as pd
 import datetime
 import traceback
 import subprocess
+import math, random
 from subprocess import Popen, PIPE, call
 
 dvfs_dict = {
@@ -58,6 +59,15 @@ GRERUNFLINK=False
 GSOURCE=14
 GMAPPER=16
 GSINK=16
+
+# Flink Rates
+STATIC_RATE="static"
+PREDICTABLE_RATE = "predictable"
+SPIKE_RATE="spike"
+
+RATE_SEPERATOR = '_'
+
+DYNAMIC_RATES = [PREDICTABLE_RATE, SPIKE_RATE]
 
 # global sleep state counter
 GPOLL=0
@@ -473,8 +483,56 @@ def getTX():
     txpackets = int(retlist[2])
     txbytes = int(retlist[5])
     return txpackets, txbytes
+
+def partition_into_unequal_parts(number, num_parts):
+    # Generate 'num_parts - 1' random partition points
+    partition_points = sorted(random.sample(range(1, number), num_parts - 1))
     
-def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISABLE):
+    # Initialize the list to store the parts
+    parts = []
+    prev_point = 0
+    for point in partition_points:
+        parts.append(point - prev_point)
+        prev_point = point
+    
+    # Calculate the last part
+    parts.append(number - sum(parts))
+    return parts
+
+def generate_varying_rates(RATE_TYPE, FLINKRATE):
+    _flinkrate, _dur=FLINKRATE.split(RATE_SEPERATOR)
+    _flinkrate = int(_flinkrate)
+    _dur = int(_dur)
+    FINAL_RATE = ""
+    if RATE_TYPE == PREDICTABLE_RATE:
+        # Split duration into 4 equal parts to simulate 2 day/night
+        parts = 4
+
+        # Duration split
+        equal_dur = math.floor(_dur / parts)
+        lesser_rate = math.floor(_flinkrate / 2)
+        high_low_chunk = f"{_flinkrate}{RATE_SEPERATOR}{equal_dur}{RATE_SEPERATOR}{lesser_rate}{RATE_SEPERATOR}{equal_dur}"
+        # Build the rate string
+        FINAL_RATE = f"{high_low_chunk}{RATE_SEPERATOR}{high_low_chunk}"
+    else:
+        num_spikes = 5
+        SPIKE_RATE = 460000
+        SPIKE_TIME = 10000
+        SPIKE_CHUNK = f"{SPIKE_RATE}{RATE_SEPERATOR}{SPIKE_TIME}" # 460000_10000
+
+        _duration_left = _dur - (SPIKE_TIME * num_spikes)
+        dur_btw_spikes = partition_into_unequal_parts(_duration_left, num_spikes + 1) # ___|____|____|____|____|____
+
+        for i in range(num_spikes + 1):
+            if i != num_spikes:
+                FINAL_RATE += f"{_flinkrate}{RATE_SEPERATOR}{dur_btw_spikes[i]}{RATE_SEPERATOR}{SPIKE_CHUNK}{RATE_SEPERATOR}"
+            else:
+                FINAL_RATE += f"{_flinkrate}{RATE_SEPERATOR}{dur_btw_spikes[i]}"
+
+    print(f"Final Rate is: {FINAL_RATE}")
+    return FINAL_RATE
+
+def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, FLINKRATETYPE, BUFFTIMEOUT, SLEEPDISABLE):
     global GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB, GERXP, GERXB, GETXP, GETXB, GQUERY, GPOLICY, GRERUNFLINK, GSOURCE, GSINK, GMAPPER
     #resetAllCores()
     #setCores(NCORES)
@@ -482,7 +540,15 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISAB
     setITR(ITR)
     setDVFS(DVFS)
 
-    _flinkrate=FLINKRATE.split('_')
+    FLINKRATE_ORIG = FLINKRATE
+    rate_modified_flag = False
+    if FLINKRATETYPE in DYNAMIC_RATES:
+        if  FLINKRATE.count(RATE_SEPERATOR) != 1:
+            sys.exit("For varying workloads, please just specify single overall rate, division will be done by the script")
+        FLINKRATE = generate_varying_rates(FLINKRATETYPE, FLINKRATE)
+        rate_modified_flag = True
+
+    _flinkrate=FLINKRATE.split(RATE_SEPERATOR)
     _flinkdur=0
     for i in range(len(_flinkrate)):
         if(i%2!=0):
@@ -490,11 +556,14 @@ def runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISAB
 
     _flinkdur=int(_flinkdur/1000)
     print("Flink job duration: ", _flinkdur)
-
-    KWD=f"{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_mapper{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
-    if SLEEPDISABLE == 1:
-        KWD=f"disabled_{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_mapper{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
-    #KWD=GQUERY+"_"+"cores"+str(NCORES)+"_frate"+str(FLINKRATE)+"_fbuff"+str(BUFFTIMEOUT)+'_itr'+str(ITR)+"_"+str(GPOLICY)+"dvfs"+str(DVFS)+'_repeat'+str(NREPEAT)
+    print(f"FLINKRATE = {FLINKRATE}")
+    
+    KWD = ""
+    if rate_modified_flag:
+        KWD=f"{GQUERY}_cores{NCORES}_frate{FLINKRATE_ORIG}_fratetype_{FLINKRATETYPE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_mapper{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
+    else:
+        KWD=f"{GQUERY}_cores{NCORES}_frate{FLINKRATE}_fratetype_{FLINKRATETYPE}_fbuff{BUFFTIMEOUT}_itr{ITR}_{GPOLICY}dvfs{DVFS}_source{GSOURCE}_mapper{GMAPPER}_sink{GSINK}_repeat{NREPEAT}"
+        
     flinklogdir="./logs/"+KWD+"/Flinklogs/"
     itrlogsdir="./logs/"+KWD+"/ITRlogs/"
     runcmd('mkdir logs')
@@ -583,6 +652,8 @@ if __name__ == '__main__':
     parser.add_argument("--nrepeat", help="repeat value")
     parser.add_argument("--verbose", help="Print mcd raw stats")
     parser.add_argument("--flinkrate", help="input rate of Flink query")
+    parser.add_argument("--flinkratetype", help="input rate type of Flink query - static, predictable, spike")
+    
     parser.add_argument("--bufftimeout", help="bufferTimeout in Flink")
     parser.add_argument("--runcmd", help="startflink/stopflink")
     parser.add_argument("--nsource", help="num of source")
@@ -625,6 +696,10 @@ if __name__ == '__main__':
         print("flinkrate = ", args.flinkrate)
         FLINKRATE = args.flinkrate
 
+    if args.flinkratetype:
+        print("flinkratetype = ", args.flinkratetype)
+        FLINKRATETYPE = args.flinkratetype
+        
     if args.bufftimeout:
         print("BUFFTIMEOUT = ", args.bufftimeout)
         BUFFTIMEOUT = args.bufftimeout
@@ -655,7 +730,7 @@ if __name__ == '__main__':
         
     try:
         #GPOLL, GC1, GC1E, GC3, GC6, GRXP, GRXB, GTXP, GTXB = getStats()
-        runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, BUFFTIMEOUT, SLEEPDISABLE)
+        runexperiment(NREPEAT, NCORES, ITR, DVFS, FLINKRATE, FLINKRATETYPE, BUFFTIMEOUT, SLEEPDISABLE)
     except Exception as error:
         print(error)
         traceback.print_exc()
