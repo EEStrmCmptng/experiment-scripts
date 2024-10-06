@@ -500,6 +500,8 @@ def partition_into_unequal_parts(number, num_parts):
     return parts
 
 def generate_varying_rates(RATE_TYPE, FLINKRATE):
+    global GQUERY
+    
     _flinkrate, _dur=FLINKRATE.split(RATE_SEPERATOR)
     _flinkrate = int(_flinkrate)
     _dur = int(_dur)
@@ -517,6 +519,11 @@ def generate_varying_rates(RATE_TYPE, FLINKRATE):
     else:
         num_spikes = 5
         SPIKE_RATE = 460000
+
+        ## peak rate of imgproc is 400
+        if GQUERY == "imgproc":
+            SPIKE_RATE=460
+        
         SPIKE_TIME = 10000
         SPIKE_CHUNK = f"{SPIKE_RATE}{RATE_SEPERATOR}{SPIKE_TIME}" # 460000_10000
 
